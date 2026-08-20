@@ -1,0 +1,9 @@
+{
+  "name": "@jayjnu/branded-ui-repo-tools",
+  "version": "0.0.0",
+  "private": true,
+  "files": ["tsconfig.json"],
+  "exports": {
+    "./tsconfig.json": "./tsconfig.json"
+  }
+}

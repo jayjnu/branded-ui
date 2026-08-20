@@ -1,0 +1,34 @@
+{
+  "name": "@jayjnu/branded-ui-react",
+  "version": "0.1.0",
+  "description": "React factories for Branded UI contracts.",
+  "type": "module",
+  "sideEffects": false,
+  "files": ["dist"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "tsc -p tsconfig.test.json && vitest run"
+  },
+  "dependencies": {
+    "@jayjnu/branded-ui": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@jayjnu/branded-ui-repo-tools": "workspace:*",
+    "@types/react": "^19.2.14",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "keywords": ["typescript", "react", "architecture"],
+  "author": "Jin Woo Jung",
+  "license": "MIT"
+}
