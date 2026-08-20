@@ -4,7 +4,7 @@ import type {
   ComponentPropsWithRef,
   ReactNode,
 } from "react";
-import { describe, expect, expectTypeOf, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vite-plus/test";
 import { asyncUI, binding, layoutUI, pureUI } from "../src/index.js";
 
 describe("React factories", () => {

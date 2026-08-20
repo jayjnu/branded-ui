@@ -1,0 +1,25 @@
+{
+  "name": "@jayjnu/branded-ui-example-react-vite-oxlint",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vp dev",
+    "build": "tsc -p tsconfig.json && vp build",
+    "lint": "vp lint src --react-plugin --jsx-a11y-plugin",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@jayjnu/branded-ui": "workspace:*",
+    "@jayjnu/branded-ui-react": "workspace:*",
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
+  "devDependencies": {
+    "@jayjnu/branded-ui-repo-tools": "workspace:*",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "typescript": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}

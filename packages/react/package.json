@@ -14,7 +14,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsc -p tsconfig.test.json && vitest run"
+    "test": "tsc -p tsconfig.test.json && vp test"
   },
   "dependencies": {
     "@jayjnu/branded-ui": "workspace:*"
@@ -24,9 +24,9 @@
   },
   "devDependencies": {
     "@jayjnu/branded-ui-repo-tools": "workspace:*",
-    "@types/react": "^19.2.14",
+    "@types/react": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vite-plus": "catalog:"
   },
   "keywords": ["typescript", "react", "architecture"],
   "author": "Jin Woo Jung",
