@@ -2,7 +2,7 @@
 
 [English](README.md) | [한국어](README.ko.md)
 
-React factories for declaring Branded UI contracts and connecting them to application behavior.
+React factories for defining Branded UI contracts and connecting them to application code.
 
 ## Install
 
@@ -14,12 +14,12 @@ React 18 or newer is required as a peer dependency.
 
 ## Mental model
 
-A Branded UI feature is split into two parts:
+Each Branded UI feature has two parts:
 
-- a **UI declaration** defines the layout, slots, components, and visible states;
-- a **Binding** owns hooks, data access, effects, and state transitions, then composes only the declared UI.
+- the **UI declaration** lists its layout, slots, components, and visible states;
+- the **Binding** contains hooks, data access, effects, and state transitions, then composes only the declared UI.
 
-This keeps presentation contracts independently readable while TypeScript verifies slot names, component props, state coverage, and Binding identity.
+The UI contract remains readable on its own. TypeScript checks the slot names and component props, requires every state to be handled, and tracks which contract a Binding consumes.
 
 ## API
 
@@ -36,7 +36,7 @@ This keeps presentation contracts independently readable while TypeScript verifi
 
 ## Synchronous UI
 
-Declare presentation separately from behavior:
+Keep presentation separate from behavior:
 
 ```tsx
 // Counter.ui.tsx
@@ -62,7 +62,7 @@ export const CounterUI = syncUI({
 });
 ```
 
-The Binding owns React state and receives only the declared composition surface:
+React state stays in the Binding. Its callback receives only the declared `Layout` and `Slots`:
 
 ```tsx
 // Counter.binding.tsx
@@ -84,11 +84,11 @@ export const Counter = binding(CounterUI)(({ Layout, Slots }) => {
 });
 ```
 
-Layout slots may be optional. A required layout prop must be declared in every sync slot set and every async state; an optional prop may be omitted.
+Layout slots may be optional. Every sync slot set and async state must include required layout props. Optional props may be left out.
 
 ## Async UI: explicit result states
 
-Use `asyncUI.states()` when the Binding owns the standard pending and failed states:
+Use `asyncUI.states()` when the Binding handles the standard pending and failed states:
 
 ```tsx
 const OrdersUI = asyncUI({
@@ -118,11 +118,11 @@ export const Orders = binding(OrdersUI)(({ Layout, States }) => {
 });
 ```
 
-`asyncUI.exhaustive()` ties the case map to the declared state map, so adding or removing a state produces a type error at the Binding until its handling is updated.
+`asyncUI.exhaustive()` checks the cases against the declared states. Adding or removing a state causes a type error until the Binding handles the new set.
 
 ## Async UI: Suspense
 
-When data access suspends, declare presentation for the fallback separately from resolved application states:
+For a suspending data source, declare the fallback separately from the resolved application states:
 
 ```tsx
 const OrdersUI = asyncUI({
@@ -155,7 +155,7 @@ export const Orders = binding(OrdersUI)(
 );
 ```
 
-The fallback is a presentation contract, not a synthetic application state. Query errors remain the responsibility of an ancestor Error Boundary, including query-specific reset behavior.
+The fallback describes what Suspense renders and stays separate from application state. An ancestor Error Boundary handles query errors and any query-specific reset behavior.
 
 ## Composition rules
 
@@ -165,11 +165,11 @@ The fallback is a presentation contract, not a synthetic application state. Quer
 - `asyncUI.exhaustive()` rejects both missing and extra state cases.
 - Exhaustive async Bindings are designed for function components. Ref-forwarding async Bindings do not currently have a dedicated adapter.
 
-These rules are primarily enforced by TypeScript. File-local architecture checks such as Binding imports and direct slot placement are available through [`@jayjnu/oxlint-plugin-branded-ui-react`](https://github.com/jayjnu/branded-ui/tree/main/packages/oxlint-plugin-branded-ui-react).
+TypeScript enforces most of these rules. [`@jayjnu/oxlint-plugin-branded-ui-react`](https://github.com/jayjnu/branded-ui/tree/main/packages/oxlint-plugin-branded-ui-react) handles file-local checks such as Binding imports and direct slot placement.
 
 ## Example
 
-See [`examples/react-vite-oxlint`](https://github.com/jayjnu/branded-ui/tree/main/examples/react-vite-oxlint) for nested Bindings, TanStack Query, Suspense, Error Boundaries, and Oxlint integration.
+[`examples/react-vite-oxlint`](https://github.com/jayjnu/branded-ui/tree/main/examples/react-vite-oxlint) combines nested Bindings with TanStack Query, Suspense, Error Boundaries, and Oxlint.
 
 ## License
 
