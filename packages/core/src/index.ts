@@ -23,17 +23,7 @@ export type LayoutUI<
 export type LayoutSlots<Layout extends LayoutUI> =
   Layout[typeof layoutSlotProps];
 
-export type AsyncUIStates<
-  Success extends StateSlots = StateSlots,
-  Empty extends StateSlots = StateSlots,
-  Pending extends StateSlots = StateSlots,
-  Failed extends StateSlots = StateSlots,
-> = {
-  readonly success: Success;
-  readonly empty: Empty;
-  readonly pending: Pending;
-  readonly failed: Failed;
-};
+export type AsyncUIStates = Readonly<Record<string, StateSlots>>;
 
 export type SyncUISet<
   Layout extends LayoutUI = LayoutUI,

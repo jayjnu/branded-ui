@@ -60,6 +60,24 @@ type BrandedState<State> = {
     ? BrandedComponents<NonNullable<State[Slot]>>
     : never;
 };
+type AsyncStateMap<Layout extends LayoutUI> = Readonly<
+  Record<string, StateMap<Layout>>
+>;
+type StandardAsyncStates = Readonly<Record<string, unknown>> & {
+  readonly success: unknown;
+  readonly empty: unknown;
+  readonly pending: unknown;
+  readonly failed: unknown;
+};
+type StatesInput<
+  Layout extends LayoutUI,
+  States extends AsyncStateMap<Layout>,
+> = {
+  readonly [State in keyof States]: StateInput<Layout, States[State]>;
+};
+type BrandedStates<States> = {
+  readonly [State in keyof States]: BrandedState<States[State]>;
+};
 type FallbackInput<Layout, Slots> = Layout extends LayoutUI
   ? Slots extends StateMap<Layout>
     ? {
@@ -138,41 +156,31 @@ export function syncUI<
 
 export function asyncUI<
   const Layout extends LayoutUI,
-  const Success extends StateMap<Layout>,
-  const Empty extends StateMap<Layout>,
-  const Pending extends StateMap<Layout>,
-  const Failed extends StateMap<Layout>,
+  const States extends AsyncStateMap<Layout>,
   const FallbackLayout extends LayoutUI | undefined = undefined,
   const FallbackSlots = undefined,
 >(config: {
   readonly layout: Layout;
-  readonly states: {
-    readonly success: Success & StateInput<Layout, NoInfer<Success>>;
-    readonly empty: Empty & StateInput<Layout, NoInfer<Empty>>;
-    readonly pending: Pending & StateInput<Layout, NoInfer<Pending>>;
-    readonly failed: Failed & StateInput<Layout, NoInfer<Failed>>;
-  };
+  readonly states: States & StatesInput<Layout, NoInfer<States>>;
   readonly fallback?: FallbackInput<FallbackLayout, FallbackSlots>;
 }): AsyncUISet<
   Layout,
-  {
-    readonly success: BrandedState<Success>;
-    readonly empty: BrandedState<Empty>;
-    readonly pending: BrandedState<Pending>;
-    readonly failed: BrandedState<Failed>;
-  },
+  BrandedStates<States>,
   BrandedFallback<FallbackLayout, FallbackSlots>
 > {
   return config as unknown as AsyncUISet<
     Layout,
-    {
-      readonly success: BrandedState<Success>;
-      readonly empty: BrandedState<Empty>;
-      readonly pending: BrandedState<Pending>;
-      readonly failed: BrandedState<Failed>;
-    },
+    BrandedStates<States>,
     BrandedFallback<FallbackLayout, FallbackSlots>
   >;
+}
+
+export namespace asyncUI {
+  export function states<const States extends StandardAsyncStates>(
+    states: States,
+  ): States {
+    return states;
+  }
 }
 
 export function binding<const UI extends UIContract>(ui: UI) {

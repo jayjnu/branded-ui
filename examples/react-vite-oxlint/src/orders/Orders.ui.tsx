@@ -39,7 +39,7 @@ const Header = () => <h2 id="orders-title">Orders</h2>;
 
 export const OrdersUI = asyncUI({
   layout: OrdersLayout,
-  states: {
+  states: asyncUI.states({
     success: {
       header: {
         Title: Header,
@@ -124,7 +124,7 @@ export const OrdersUI = asyncUI({
         ),
       },
     },
-  },
+  }),
   fallback: {
     layout: OrdersFallbackLayout,
     slots: {

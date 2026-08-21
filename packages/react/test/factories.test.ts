@@ -51,6 +51,18 @@ describe("React factories", () => {
     }>();
   });
 
+  it("returns standard async states without changing them", () => {
+    const states = {
+      success: {},
+      empty: {},
+      pending: {},
+      failed: {},
+      refreshing: {},
+    };
+
+    expect(asyncUI.states(states)).toBe(states);
+  });
+
   it("brands sync UI slots without changing the declaration", () => {
     const layout = layoutUI({
       component: (props: { content: ReactNode }) => props.content,
@@ -94,6 +106,7 @@ describe("React factories", () => {
         empty: { content: { Message: () => null } },
         pending: { content: { Skeleton: () => null } },
         failed: { content: { Message: () => null } },
+        refreshing: { content: { Indicator: () => null } },
       },
     };
 
@@ -109,6 +122,9 @@ describe("React factories", () => {
     );
     expect(ui.states.empty.content.Message).toBe(
       config.states.empty.content.Message,
+    );
+    expect(ui.states.refreshing.content.Indicator).toBe(
+      config.states.refreshing.content.Indicator,
     );
     expectTypeOf<
       ComponentProps<typeof ui.states.success.content.List>

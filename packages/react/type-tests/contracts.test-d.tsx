@@ -54,7 +54,7 @@ const OrdersFallbackLayout = layoutUI({
 
 const OrdersUI = asyncUI({
   layout: OrdersLayout,
-  states: {
+  states: asyncUI.states({
     success: {
       header: {
         Toolbar: () => <nav />,
@@ -93,7 +93,11 @@ const OrdersUI = asyncUI({
         ),
       },
     },
-  },
+    refreshing: {
+      header: { Title: () => <h1>Orders</h1> },
+      content: { Indicator: () => <p>Refreshing</p> },
+    },
+  }),
   fallback: {
     layout: OrdersFallbackLayout,
     slots: {
@@ -115,6 +119,9 @@ const OrdersPage = binding(OrdersUI)(({ Layout, States, Fallback }) => {
   >;
   type _StatesAreInjected = Assert<
     Equal<typeof States, typeof OrdersUI.states>
+  >;
+  type _CustomStandardStateIsPreserved = Assert<
+    Equal<"refreshing" extends keyof typeof States ? true : false, true>
   >;
   type _FallbackLayoutIsInjected = Assert<
     Equal<typeof Fallback.Layout, typeof OrdersFallbackLayout.component>
@@ -240,20 +247,38 @@ const RawStates = {
   },
 };
 
+const IncompleteStandardStates = {
+  success: RawStates.success,
+  empty: RawStates.empty,
+  pending: RawStates.pending,
+};
+
+// @ts-expect-error the standard state helper requires the four default states
+asyncUI.states(IncompleteStandardStates);
+
 // @ts-expect-error asyncUI requires a branded LayoutUI declaration
 asyncUI({ layout: OrdersLayoutComponent, states: RawStates });
 
-const MissingState = {
+const CustomStatesUI = asyncUI({
   layout: OrdersLayout,
   states: {
-    success: RawStates.success,
-    empty: RawStates.empty,
-    pending: RawStates.pending,
+    idle: {
+      header: { Title: () => <h1>Idle</h1> },
+      content: { Message: () => <p>Waiting</p> },
+    },
+    refreshing: {
+      header: { Title: () => <h1>Refreshing</h1> },
+      content: { Progress: () => <p>Refreshing</p> },
+    },
   },
-};
+});
 
-// @ts-expect-error all four async states are required
-asyncUI(MissingState);
+binding(CustomStatesUI)(({ States }) => {
+  type _CustomStatesAreInferred = Assert<
+    Equal<keyof typeof States, "idle" | "refreshing">
+  >;
+  return () => <States.refreshing.content.Progress />;
+});
 
 asyncUI({
   layout: OrdersLayout,

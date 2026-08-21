@@ -25,7 +25,7 @@ const Title = () => <h2 id="account-title">Account</h2>;
 
 export const AccountUI = asyncUI({
   layout: AccountLayout,
-  states: {
+  states: asyncUI.states({
     success: {
       header: { Title },
       content: {
@@ -40,12 +40,12 @@ export const AccountUI = asyncUI({
       },
       footer: {
         Actions: (props: {
-          onPending: () => void;
+          onRefreshing: () => void;
           onFailed: () => void;
           onClear: () => void;
         }) => (
           <>
-            <button type="button" onClick={props.onPending}>
+            <button type="button" onClick={props.onRefreshing}>
               Refresh
             </button>
             <button type="button" onClick={props.onFailed}>
@@ -93,5 +93,16 @@ export const AccountUI = asyncUI({
         ),
       },
     },
-  },
+    refreshing: {
+      header: { Title },
+      content: { Status: () => <p>Refreshing account details…</p> },
+      footer: {
+        Cancel: (props: { onCancel: () => void }) => (
+          <button type="button" onClick={props.onCancel}>
+            Cancel refresh
+          </button>
+        ),
+      },
+    },
+  }),
 });

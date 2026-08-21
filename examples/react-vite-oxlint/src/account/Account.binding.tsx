@@ -10,9 +10,9 @@ const initialAccount: Account = {
 export const AccountPanel = binding(AccountUI)(({ Layout, States }) => {
   function AccountBinding() {
     const [account, setAccount] = useState<Account | null>(initialAccount);
-    const [status, setStatus] = useState<"ready" | "pending" | "failed">(
-      "ready",
-    );
+    const [status, setStatus] = useState<
+      "ready" | "pending" | "failed" | "refreshing"
+    >("ready");
 
     if (status === "pending") {
       return (
@@ -21,6 +21,20 @@ export const AccountPanel = binding(AccountUI)(({ Layout, States }) => {
           content={<States.pending.content.Skeleton />}
           footer={
             <States.pending.footer.Cancel
+              onCancel={() => setStatus("ready")}
+            />
+          }
+        />
+      );
+    }
+
+    if (status === "refreshing") {
+      return (
+        <Layout
+          header={<States.refreshing.header.Title />}
+          content={<States.refreshing.content.Status />}
+          footer={
+            <States.refreshing.footer.Cancel
               onCancel={() => setStatus("ready")}
             />
           }
@@ -60,7 +74,7 @@ export const AccountPanel = binding(AccountUI)(({ Layout, States }) => {
         content={<States.success.content.Summary account={account} />}
         footer={
           <States.success.footer.Actions
-            onPending={() => setStatus("pending")}
+            onRefreshing={() => setStatus("refreshing")}
             onFailed={() => setStatus("failed")}
             onClear={() => setAccount(null)}
           />
