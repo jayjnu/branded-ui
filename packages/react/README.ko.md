@@ -169,7 +169,8 @@ fallback은 앱 상태를 억지로 하나 더 만든 것이 아니라 별도의
 
 ## 예제
 
-중첩 Binding과 TanStack Query, Suspense, Error Boundary, Oxlint를 함께 쓰는 예제는 [`examples/react-vite-oxlint`](https://github.com/jayjnu/branded-ui/tree/main/examples/react-vite-oxlint)에 있습니다.
+- [`examples/react-vite-oxlint`](https://github.com/jayjnu/branded-ui/tree/main/examples/react-vite-oxlint)은 중첩 Binding과 TanStack Query, Suspense, Error Boundary, Oxlint를 함께 보여줍니다.
+- [`examples/next-app-router`](https://github.com/jayjnu/branded-ui/tree/main/examples/next-app-router)는 App Router 데이터 로딩을 async Server Component Binding과 Suspense, exhaustive UI 상태로 표현합니다.
 
 ## 라이선스
 

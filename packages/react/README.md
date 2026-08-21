@@ -169,7 +169,8 @@ TypeScript enforces most of these rules. [`@jayjnu/oxlint-plugin-branded-ui-reac
 
 ## Example
 
-[`examples/react-vite-oxlint`](https://github.com/jayjnu/branded-ui/tree/main/examples/react-vite-oxlint) combines nested Bindings with TanStack Query, Suspense, Error Boundaries, and Oxlint.
+- [`examples/react-vite-oxlint`](https://github.com/jayjnu/branded-ui/tree/main/examples/react-vite-oxlint) combines nested Bindings with TanStack Query, Suspense, Error Boundaries, and Oxlint.
+- [`examples/next-app-router`](https://github.com/jayjnu/branded-ui/tree/main/examples/next-app-router) models App Router data loading with an async Server Component Binding, Suspense, and exhaustive UI states.
 
 ## License
 

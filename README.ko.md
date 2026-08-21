@@ -76,7 +76,8 @@ export const PendingOrders = pureUI(() => (
 
 ## 예제
 
-중첩 Binding과 TanStack Query, Suspense, Error Boundary, Oxlint를 함께 쓰는 예제는 [`examples/react-vite-oxlint`](examples/react-vite-oxlint)에 있습니다.
+- [`examples/react-vite-oxlint`](examples/react-vite-oxlint)은 중첩 Binding과 TanStack Query, Suspense, Error Boundary, Oxlint를 함께 보여줍니다.
+- [`examples/next-app-router`](examples/next-app-router)는 App Router 데이터 로딩을 async Server Component Binding과 Suspense, exhaustive UI 상태로 표현합니다.
 
 ## 핵심 개념
 

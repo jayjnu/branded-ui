@@ -76,7 +76,8 @@ TypeScript rejects missing states, invalid slots, incompatible props, and compon
 
 ## Example
 
-[`examples/react-vite-oxlint`](examples/react-vite-oxlint) demonstrates nested Bindings, TanStack Query, Suspense, Error Boundaries, and Oxlint integration.
+- [`examples/react-vite-oxlint`](examples/react-vite-oxlint) demonstrates nested Bindings, TanStack Query, Suspense, Error Boundaries, and Oxlint integration.
+- [`examples/next-app-router`](examples/next-app-router) demonstrates App Router data loading with an async Server Component Binding, Suspense, and exhaustive UI states.
 
 ## Core concepts
 
