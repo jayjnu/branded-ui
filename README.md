@@ -78,6 +78,22 @@ export const Orders = binding(OrdersUI)(
 
 Query errors are handled by an ancestor Error Boundary. Query-specific reset behavior remains application composition rather than a Branded UI contract.
 
+## Checker
+
+`@jayjnu/branded-ui-checker` adds project-wide checks that TypeScript cannot express after JSX values become `ReactNode`.
+
+```sh
+branded-ui-check tsconfig.json
+```
+
+Initial diagnostics cover:
+
+- `BUI001`: a state component is rendered into the wrong Layout slot
+- `BUI002`: a UI declaration module imports a Binding module
+- `BUI003`: a PascalCase component is exported without a Branded UI factory
+
+The checker resolves the project from its TypeScript config and exits non-zero when diagnostics are found.
+
 ## Examples
 
 Example projects follow `examples/$stack-$build-tool-$linter`. See `examples/react-vite-oxlint` for nested Bindings, TanStack Query, Suspense, and Error Boundary composition.

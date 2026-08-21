@@ -1,0 +1,9 @@
+{
+  "extends": "@jayjnu/branded-ui-repo-tools/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "types": ["node"]
+  },
+  "include": ["src"]
+}
