@@ -16,11 +16,12 @@
     "@tanstack/react-query": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "react-error-boundary": "catalog:"
+    "react-error-boundary": "catalog:",
+    "react-router-dom": "catalog:"
   },
   "devDependencies": {
-    "@jayjnu/oxlint-plugin-branded-ui-react": "workspace:*",
     "@jayjnu/branded-ui-repo-tools": "workspace:*",
+    "@jayjnu/oxlint-plugin-branded-ui-react": "workspace:*",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "happy-dom": "catalog:",

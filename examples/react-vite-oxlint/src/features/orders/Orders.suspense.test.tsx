@@ -2,7 +2,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, expect, it, vi } from "vite-plus/test";
-import { DashboardPage } from "../dashboard/Dashboard.binding";
+import { App } from "../../app/App.binding";
 
 const container = document.createElement("div");
 const root = createRoot(container);
@@ -13,7 +13,7 @@ afterEach(async () => {
   vi.useRealTimers();
 });
 
-it("moves query pending and errors through Suspense and ErrorBoundary", async () => {
+it("routes pages and moves query errors through Suspense and ErrorBoundary", async () => {
   vi.useFakeTimers();
   vi.spyOn(console, "error").mockImplementation(() => undefined);
   const queryClient = new QueryClient({
@@ -23,7 +23,7 @@ it("moves query pending and errors through Suspense and ErrorBoundary", async ()
   await act(() =>
     root.render(
       <QueryClientProvider client={queryClient}>
-        <DashboardPage />
+        <App />
       </QueryClientProvider>,
     ),
   );
@@ -39,5 +39,11 @@ it("moves query pending and errors through Suspense and ErrorBoundary", async ()
   expect(container.textContent).toContain("Loading orders");
 
   await act(() => vi.advanceTimersByTimeAsync(500));
-  expect(container.textContent).toContain("Could not load orders");
+  expect(container.textContent).toContain("Could not load this page");
+
+  const accountLink = [...container.querySelectorAll("a")].find(
+    (link) => link.textContent === "Account",
+  );
+  await act(() => accountLink?.click());
+  expect(container.textContent).toContain("Ada Lovelace");
 });

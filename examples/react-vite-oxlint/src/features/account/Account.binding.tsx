@@ -10,9 +10,7 @@ const initialAccount: Account = {
 export const AccountPanel = binding(AccountUI)(({ Layout, States }) => {
   function AccountBinding() {
     const [account, setAccount] = useState<Account | null>(initialAccount);
-    const [status, setStatus] = useState<
-      "ready" | "pending" | "failed" | "refreshing"
-    >("ready");
+    const [status, setStatus] = useState<"ready" | "pending" | "failed" | "refreshing">("ready");
     const state = status === "ready" ? (account ? "success" : "empty") : status;
 
     return asyncUI.exhaustive(state, States, {
@@ -34,18 +32,14 @@ export const AccountPanel = binding(AccountUI)(({ Layout, States }) => {
         <Layout
           header={<Empty.header.Title />}
           content={<Empty.content.Message />}
-          footer={
-            <Empty.footer.Action onRestore={() => setAccount(initialAccount)} />
-          }
+          footer={<Empty.footer.Action onRestore={() => setAccount(initialAccount)} />}
         />
       ),
       pending: (Pending) => (
         <Layout
           header={<Pending.header.Title />}
           content={<Pending.content.Skeleton />}
-          footer={
-            <Pending.footer.Cancel onCancel={() => setStatus("ready")} />
-          }
+          footer={<Pending.footer.Cancel onCancel={() => setStatus("ready")} />}
         />
       ),
       failed: (Failed) => (
@@ -59,9 +53,7 @@ export const AccountPanel = binding(AccountUI)(({ Layout, States }) => {
         <Layout
           header={<Refreshing.header.Title />}
           content={<Refreshing.content.Status />}
-          footer={
-            <Refreshing.footer.Cancel onCancel={() => setStatus("ready")} />
-          }
+          footer={<Refreshing.footer.Cancel onCancel={() => setStatus("ready")} />}
         />
       ),
     });

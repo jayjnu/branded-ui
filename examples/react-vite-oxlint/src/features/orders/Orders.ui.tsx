@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { asyncUI, layoutUI, pureUI } from "@jayjnu/branded-ui-react";
+import { asyncUI, layoutUI } from "@jayjnu/branded-ui-react";
+import { ButtonUI } from "../../shared/ui/Button.ui";
 
 export type Order = {
   id: string;
@@ -41,21 +42,11 @@ export const OrdersUI = asyncUI({
       header: { Title: Header },
       content: { List: OrdersList },
       footer: {
-        Actions: (props: {
-          onRefresh: () => void;
-          onEmpty: () => void;
-          onFailed: () => void;
-        }) => (
+        Actions: (props: { onRefresh: () => void; onEmpty: () => void; onFailed: () => void }) => (
           <>
-            <button type="button" onClick={props.onRefresh}>
-              Refresh orders
-            </button>
-            <button type="button" onClick={props.onEmpty}>
-              Load empty result
-            </button>
-            <button type="button" onClick={props.onFailed}>
-              Load query error
-            </button>
+            <ButtonUI onClick={props.onRefresh}>Refresh orders</ButtonUI>
+            <ButtonUI onClick={props.onEmpty}>Load empty result</ButtonUI>
+            <ButtonUI onClick={props.onFailed}>Load query error</ButtonUI>
           </>
         ),
       },
@@ -65,9 +56,7 @@ export const OrdersUI = asyncUI({
       content: { Message: () => <p>No orders yet.</p> },
       footer: {
         Action: (props: { onLoad: () => void }) => (
-          <button type="button" onClick={props.onLoad}>
-            Load orders
-          </button>
+          <ButtonUI onClick={props.onLoad}>Load orders</ButtonUI>
         ),
       },
     },
@@ -85,12 +74,3 @@ export const OrdersUI = asyncUI({
     },
   },
 });
-
-export const OrdersError = pureUI((props: { onRetry: () => void }) => (
-  <section role="alert">
-    <p>Could not load orders.</p>
-    <button type="button" onClick={props.onRetry}>
-      Retry
-    </button>
-  </section>
-));
