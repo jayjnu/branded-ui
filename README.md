@@ -4,23 +4,17 @@
 
 ## What is Branded UI?
 
-Branded UI is a small, type-first contract layer around ordinary UI components. It keeps presentation declarations separate from application behavior, makes meaningful states explicit, and preserves those roles through composition without introducing a new rendering system.
+Branded UI is a small, type-level contract layer for regular UI components. The contracts identify presentation components and layout slots. They also define the available view states and the point where application behavior enters.
 
-## Why?
+Branded UI does not prescribe a renderer, state manager, data client, styling system, or component library. Its core roles are framework-neutral. An adapter maps them to a framework's existing component model.
 
-Pure UI is deterministic: given the same inputs, it produces the same output. That makes UI a functional core that is easier to understand, test, reuse, and render in isolation. React, however, does not enforce this boundary. As Context and Hooks made it convenient to access behavior from anywhere, the distinction between presentation components and behavior-owning components became a convention left to each developer.
+## Status
 
-Every UI component has at least three consumers: the application, an isolated showcase such as Storybook, and tests. A leaf component that loads data or depends on hidden application state may be convenient at first, but every other consumer must then reproduce that environment. Without an explicit boundary, reuse becomes coupling and maintenance becomes expensive.
+Branded UI is experimental and its API may change before `1.0`.
 
-AI agents change this trade-off. Generating code is now cheap; verifying that independently generated code remains correct, composable, and scalable is the expensive part. Architectural intent therefore needs to be machine-readable rather than held in a developer's memory or described only in prose.
+## How Branded UI works
 
-Visual verification changes with it. An isolated showcase is no longer a nice-to-have when an agent can generate many components and state variants in one session. Each meaningful scenario needs a visible, repeatable representation so a human can review what was produced.
-
-Branded UI turns these boundaries into contracts. Compile-time brands define the roles of presentation components, layouts, states, and behavior-owning Bindings. TypeScript checks their composition, while optional lint rules cover file-level boundaries that types cannot see. Run those checks in CI or a pre-commit hook and an agent receives immediate, mechanical feedback when it violates the architecture.
-
-## How Branded UI solves it
-
-First, declare the complete presentation contract without data access or application state:
+Declare the presentation contract without data access or application state:
 
 ```tsx
 // Orders.ui.tsx
@@ -46,7 +40,7 @@ export const OrdersUI = asyncUI({
 });
 ```
 
-Then put hooks, data access, and state transitions in a Binding. The declared layout and states are injected, and every state must be handled:
+Put hooks, data access, and state transitions in a Binding. The Binding receives the declared layout and states, and must handle every state:
 
 ```tsx
 // Orders.binding.tsx
@@ -66,7 +60,7 @@ export const Orders = binding(OrdersUI)(({ Layout, States }) => {
 });
 ```
 
-The same contract can render an isolated scenario without recreating the data layer:
+The contract can also render an isolated scenario without recreating the data layer:
 
 ```tsx
 // Orders.scenario.tsx — import this component from stories and tests
@@ -78,11 +72,15 @@ export const PendingOrders = pureUI(() => (
 ));
 ```
 
-TypeScript now rejects missing states, invalid slots, incompatible props, and components used in the wrong branded role. The optional Oxlint plugin adds file-level checks such as UI modules importing Bindings or components being placed in the wrong layout slot. Storybook and tests render the same explicit contract; CI and pre-commit hooks enforce it instead of relying on developer discipline.
+TypeScript rejects missing states, invalid slots, incompatible props, and components assigned to the wrong role. The optional Oxlint plugin catches file-level problems, including UI modules that import Bindings and components placed in the wrong layout slot. Storybook and tests render the same contract. CI and pre-commit hooks keep checking it.
+
+## Example
+
+[`examples/react-vite-oxlint`](examples/react-vite-oxlint) demonstrates nested Bindings, TanStack Query, Suspense, Error Boundaries, and Oxlint integration.
 
 ## Core concepts
 
-Branded UI models a feature as a functional core surrounded by a behavior-owning shell:
+These roles split a feature into a functional core and an imperative shell:
 
 | Concept | Responsibility |
 | --- | --- |
@@ -93,17 +91,18 @@ Branded UI models a feature as a functional core surrounded by a behavior-owning
 | **Binding** | The shell that consumes an exact UI contract and owns hooks, data access, effects, and state transitions. |
 | **Brand** | Compile-time evidence that preserves each role and prevents accidental substitution or re-declaration. |
 
-Brands do not introduce another renderer. At runtime, applications still compose ordinary framework components; the brand gives TypeScript architectural information that their structural types do not carry.
+### Why branded types?
 
-## Design principles
+TypeScript is structurally typed, so values with the same shape are interchangeable. A UI role needs an identity beyond its shape. A branded type adds a hidden `unique symbol` marker:
 
-- **Functional core, behavior-owning shell.** Keep presentation deterministic and move environmental dependencies to Bindings.
-- **Explicit inputs over hidden dependencies.** Data and callbacks cross the UI boundary through props rather than leaf-level API access or application context.
-- **States are part of the contract.** Pending, empty, failed, success, and domain-specific states are designed up front and handled exhaustively.
-- **One contract for every consumer.** The application, Storybook, and tests render the same declared UI instead of maintaining separate representations.
-- **Machine-verifiable architecture.** Types and lint rules communicate boundaries to both humans and AI agents.
-- **Composition over framework machinery.** Branded UI preserves normal component composition and adds the smallest runtime layer needed to carry the contract.
-- **Framework-neutral roles.** The core model stays independent from framework-specific adapters and tooling.
+```ts
+declare const role: unique symbol;
+type Branded<Value, Role> = Value & { readonly [role]: Role };
+```
+
+The marker exists only in the type system. TypeScript can therefore tell `PureUI`, `LayoutUI`, and `Binding` apart even when the underlying values are regular components. The contracts can reject a component used or re-declared in the wrong role.
+
+A brand adds no renderer or runtime wrapper. Applications keep composing framework components as usual; the type carries the architectural role.
 
 ## Packages
 
@@ -113,13 +112,41 @@ Brands do not introduce another renderer. At runtime, applications still compose
 | [`@jayjnu/branded-ui-react`](packages/react) | React factories, Bindings, exhaustive state matching, and Suspense composition | [React guide](packages/react/README.md) |
 | [`@jayjnu/oxlint-plugin-branded-ui-react`](packages/oxlint-plugin-branded-ui-react) | Optional architecture rules for React projects | [Plugin guide](packages/oxlint-plugin-branded-ui-react/README.md) |
 
-## Example
+## Why these contracts?
 
-[`examples/react-vite-oxlint`](examples/react-vite-oxlint) demonstrates nested Bindings, TanStack Query, Suspense, Error Boundaries, and Oxlint integration.
+### Pure UI is deterministic
 
-## Status
+Pure UI produces the same output for the same input. That makes it easier to understand, test, reuse, and render in isolation. React does not enforce this boundary. Context and Hooks make application behavior available anywhere, so teams often leave the split between presentation and behavior to convention.
 
-Branded UI is experimental and its API may change before `1.0`.
+A UI component usually appears in the application, Storybook, and tests. If a leaf component fetches data or reads hidden application state, the other two environments must reproduce those dependencies. The initial convenience turns into coupling that is hard to maintain.
+
+### AI agents need machine-verifiable boundaries
+
+AI agents make code cheaper to produce and more expensive to verify. Code written across separate sessions still has to compose correctly and hold up as the project grows. The architecture therefore needs to live in code, not only in a developer's memory or in prose.
+
+Agents can also generate many components and state variants in one session. A person needs Storybook or another isolated viewer to inspect each meaningful scenario and return to it later.
+
+Branded types record the roles of presentation components, layouts, states, and Bindings. TypeScript checks how they compose. Optional lint rules check file boundaries that types cannot see. Running both in CI or a pre-commit hook gives an agent a concrete error when it breaks a rule.
+
+## Design principles
+
+### Functional Core, Imperative Shell
+
+The UI declaration is the functional core. It receives props and describes layouts and view states without reading from the application environment. The same input produces the same UI.
+
+The Binding is the imperative shell. It owns hooks, API calls, effects, and state transitions. It turns external changes into inputs and a finite UI state for the core. Application behavior can remain imperative while presentation stays deterministic.
+
+### SOLID expressed as UI contracts
+
+The contracts map several SOLID principles to UI components:
+
+- Single Responsibility separates rendering, layout, and application behavior into Pure UI, Layout, and Binding. Each role changes for a different reason.
+- Dependency Inversion makes Bindings depend on a UI contract. Presentation components do not know which API client, state manager, or application context supplied their props.
+- Interface Segregation uses named slots to expose only the places a Binding may compose.
+- State is data. States are declared as values and matched exhaustively instead of being spread across conditional branches.
+- Composition takes the place of inheritance. Branded UI keeps the framework's component model and adds role information without adding a rendering abstraction.
+- Technology choices stay outside the contract. Frameworks, component libraries, state managers, data clients, and styling tools can change without changing the UI roles.
+- Type and lint checks report boundary violations to both developers and AI agents.
 
 ## License
 
