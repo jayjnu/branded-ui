@@ -20,16 +20,6 @@ describe("React factories", () => {
     }>();
   });
 
-  it("brands a layout component without wrapping it", () => {
-    const component = (props: { children?: ReactNode }) => props.children;
-    const branded = layoutUI(component);
-
-    expect(branded).toBe(component);
-    expectTypeOf<ComponentProps<typeof branded>>().toEqualTypeOf<{
-      children?: ReactNode;
-    }>();
-  });
-
   it("preserves forwardRef component props and ref types", () => {
     const component = forwardRef<HTMLInputElement, { name: string }>(() => null);
     const branded = pureUI(component);
@@ -40,42 +30,102 @@ describe("React factories", () => {
     >();
   });
 
-  it("returns the original async UI declaration", () => {
+  it("returns a layout declaration with runtime slot names", () => {
+    const component = (props: { header: ReactNode; content: ReactNode }) =>
+      props.content;
+    const contract = { component, slots: ["header", "content"] } as const;
+    const layout = layoutUI(contract);
+
+    expect(layout).toBe(contract);
+    expect(layout.component).toBe(component);
+    expect(layout.slots).toEqual(["header", "content"]);
+    expectTypeOf<ComponentProps<typeof layout.component>>().toEqualTypeOf<{
+      header: ReactNode;
+      content: ReactNode;
+    }>();
+  });
+
+  it("brands nested async state components without changing the declaration", () => {
+    const layout = layoutUI({
+      component: (props: { content: ReactNode }) => props.content,
+      slots: ["content"],
+    });
     const config = {
-      layout: layoutUI((props: { children?: ReactNode }) => props.children),
-      component: pureUI((props: { orderId: string }) => props.orderId),
-      skeleton: pureUI(() => null),
+      layout,
+      states: {
+        success: {
+          content: {
+            List: (props: { orderId: string }) => props.orderId,
+            Pagination: () => null,
+          },
+        },
+        empty: { content: { Message: () => null } },
+        pending: { content: { Skeleton: () => null } },
+        failed: { content: { Message: () => null } },
+      },
     };
 
     const ui = asyncUI(config);
 
     expect(ui).toBe(config);
-    expect(ui.layout).toBe(config.layout);
-    expect(ui.component).toBe(config.component);
-    expect(ui.skeleton).toBe(config.skeleton);
-    expect(ui.error).toBeUndefined();
+    expect(ui.layout).toBe(layout);
+    expect(ui.states.success.content.List).toBe(
+      config.states.success.content.List,
+    );
+    expect(ui.states.success.content.Pagination).toBe(
+      config.states.success.content.Pagination,
+    );
+    expect(ui.states.empty.content.Message).toBe(
+      config.states.empty.content.Message,
+    );
+    expectTypeOf<
+      ComponentProps<typeof ui.states.success.content.List>
+    >().toEqualTypeOf<{ orderId: string }>();
   });
 
-  it("preserves an optional async error component", () => {
-    const error = pureUI((props: { message: string }) => props.message);
-    const config = {
-      layout: layoutUI((props: { children?: ReactNode }) => props.children),
-      component: pureUI(() => null),
-      skeleton: pureUI(() => null),
-      error,
-    };
-
-    expect(asyncUI(config).error).toBe(error);
-  });
-
-  it("returns the binding component without wrapping it", () => {
+  it("injects the Layout component and PascalCase state groups", () => {
+    const layout = layoutUI({
+      component: (props: { content: ReactNode }) => props.content,
+      slots: ["content"],
+    });
+    const fallbackLayout = layoutUI({
+      component: (props: { content: ReactNode }) => props.content,
+      slots: ["content"],
+    });
     const ui = asyncUI({
-      layout: layoutUI((props: { children?: ReactNode }) => props.children),
-      component: pureUI(() => null),
-      skeleton: pureUI(() => null),
+      layout,
+      states: {
+        success: { content: { Content: () => null } },
+        empty: { content: { Content: () => null } },
+        pending: { content: { Content: () => null } },
+        failed: { content: { Content: () => null } },
+      },
+      fallback: {
+        layout: fallbackLayout,
+        slots: { content: { Message: () => null } },
+      },
     });
     const component = (props: { orderId: string }) => props.orderId;
+    let definitions = 0;
 
-    expect(binding({ ui, component })).toBe(component);
+    const bounded = binding(ui)(
+      ({ Layout, Success, Empty, Pending, Failed, Fallback }) => {
+        definitions += 1;
+        expect(Layout).toBe(layout.component);
+        expect(Success).toBe(ui.states.success);
+        expect(Empty).toBe(ui.states.empty);
+        expect(Pending).toBe(ui.states.pending);
+        expect(Failed).toBe(ui.states.failed);
+        expect(Fallback.Layout).toBe(fallbackLayout.component);
+        expect(Fallback.content).toBe(ui.fallback?.slots.content);
+        return component;
+      },
+    );
+
+    expect(definitions).toBe(1);
+    expect(bounded).toBe(component);
+    expectTypeOf<ComponentProps<typeof bounded>>().toEqualTypeOf<{
+      orderId: string;
+    }>();
   });
 });
