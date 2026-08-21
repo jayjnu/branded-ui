@@ -35,6 +35,17 @@ export type AsyncUIStates<
   readonly failed: Failed;
 };
 
+export type SyncUISet<
+  Layout extends LayoutUI = LayoutUI,
+  Slots extends StateSlots = StateSlots,
+> = Branded<
+  {
+    readonly layout: Layout;
+    readonly slots: Slots;
+  },
+  "SyncUISet"
+>;
+
 export type FallbackUI<
   Layout extends LayoutUI = LayoutUI,
   Slots extends StateSlots = StateSlots,
@@ -56,7 +67,9 @@ export type AsyncUISet<
   "AsyncUISet"
 >;
 
+export type UIContract = SyncUISet | AsyncUISet;
+
 export type Binding<
   Component = unknown,
-  UI extends AsyncUISet = AsyncUISet,
+  UI extends UIContract = UIContract,
 > = Branded<Component, "Binding"> & { readonly [consumedUI]: UI };

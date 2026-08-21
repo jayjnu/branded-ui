@@ -5,8 +5,15 @@ import type {
   LayoutSlots,
   LayoutUI,
   PureUI,
+  SyncUISet,
 } from "@jayjnu/branded-ui";
-import { asyncUI, binding, layoutUI, pureUI } from "@jayjnu/branded-ui-react";
+import {
+  asyncUI,
+  binding,
+  layoutUI,
+  pureUI,
+  syncUI,
+} from "@jayjnu/branded-ui-react";
 
 type Equal<Left, Right> =
   (<Value>() => Value extends Left ? 1 : 2) extends
@@ -102,42 +109,53 @@ const OrdersUI = asyncUI({
   },
 });
 
-const OrdersPage = binding(OrdersUI)(
-  ({ Layout, Success, Empty, Pending, Failed, Fallback }) => {
-    type _LayoutIsInjected = Assert<
-      Equal<typeof Layout, typeof OrdersUI.layout.component>
-    >;
-    type _SuccessIsInjected = Assert<
-      Equal<typeof Success, typeof OrdersUI.states.success>
-    >;
-    type _EmptyIsInjected = Assert<
-      Equal<typeof Empty, typeof OrdersUI.states.empty>
-    >;
-    type _PendingIsInjected = Assert<
-      Equal<typeof Pending, typeof OrdersUI.states.pending>
-    >;
-    type _FailedIsInjected = Assert<
-      Equal<typeof Failed, typeof OrdersUI.states.failed>
-    >;
-    type _FallbackLayoutIsInjected = Assert<
-      Equal<typeof Fallback.Layout, typeof OrdersFallbackLayout.component>
-    >;
-    type _FallbackSlotsAreInjected = Assert<
-      Equal<
-        typeof Fallback.content,
-        NonNullable<typeof OrdersUI.fallback>["slots"]["content"]
-      >
-    >;
+const OrdersPage = binding(OrdersUI)(({ Layout, States, Fallback }) => {
+  type _LayoutIsInjected = Assert<
+    Equal<typeof Layout, typeof OrdersUI.layout.component>
+  >;
+  type _StatesAreInjected = Assert<
+    Equal<typeof States, typeof OrdersUI.states>
+  >;
+  type _FallbackLayoutIsInjected = Assert<
+    Equal<typeof Fallback.Layout, typeof OrdersFallbackLayout.component>
+  >;
+  type _FallbackSlotsAreInjected = Assert<
+    Equal<
+      typeof Fallback.content,
+      NonNullable<typeof OrdersUI.fallback>["slots"]["content"]
+    >
+  >;
 
-    return (props: { orderId: string }) => (
-      <Layout
-        header={<Success.header.Toolbar />}
-        content={<Success.content.List {...props} />}
-        footer={<Success.footer.Pagination />}
-      />
-    );
+  return (props: { orderId: string }) => (
+    <Layout
+      header={<States.success.header.Toolbar />}
+      content={<States.success.content.List {...props} />}
+      footer={<States.success.footer.Pagination />}
+    />
+  );
+});
+
+const DashboardUI = syncUI({
+  layout: OrdersLayout,
+  slots: {
+    header: { Title: () => <h1>Dashboard</h1> },
+    content: { View: (props: { title: string }) => <p>{props.title}</p> },
   },
-);
+});
+
+const DashboardPage = binding(DashboardUI)(({ Layout, Slots }) => {
+  type _LayoutIsInjected = Assert<
+    Equal<typeof Layout, typeof DashboardUI.layout.component>
+  >;
+  type _SlotsAreInjected = Assert<Equal<typeof Slots, typeof DashboardUI.slots>>;
+
+  return (props: { title: string }) => (
+    <Layout
+      header={<Slots.header.Title />}
+      content={<Slots.content.View {...props} />}
+    />
+  );
+});
 
 type _RuntimeSlotNamesArePreserved = Assert<
   Equal<typeof OrdersLayout.slots, readonly ["header", "content", "footer"]>
@@ -157,8 +175,13 @@ type _StateComponentPropsArePreserved = Assert<
 type _BindingPropsArePreserved = Assert<
   Equal<ComponentProps<typeof OrdersPage>, { orderId: string }>
 >;
+type _SyncBindingPropsArePreserved = Assert<
+  Equal<ComponentProps<typeof DashboardPage>, { title: string }>
+>;
 
 const _layoutContract: LayoutUI = OrdersUI.layout;
+const _syncContract: SyncUISet = DashboardUI;
+const _dashboardBinding: Binding<unknown, typeof DashboardUI> = DashboardPage;
 const _componentContract: PureUI = OrdersUI.states.success.content.List;
 const _ordersBinding: Binding<unknown, typeof OrdersUI> = OrdersPage;
 const StandaloneView = pureUI((props: { label: string }) => (
@@ -176,6 +199,27 @@ layoutUI({
 
 // @ts-expect-error required layout slot props remain required
 const _missingLayoutSlot = <OrdersLayoutComponent header={<h1>Orders</h1>} />;
+
+const MissingSyncSlot = {
+  layout: OrdersLayout,
+  slots: {
+    header: { Title: () => null },
+  },
+};
+
+// @ts-expect-error syncUI must declare required LayoutUI slots
+syncUI(MissingSyncSlot);
+
+syncUI({
+  layout: OrdersLayout,
+  slots: {
+    header: { Title: () => null },
+    content: {
+      // @ts-expect-error sync UI component keys must use PascalCase
+      view: () => null,
+    },
+  },
+});
 
 const RawStates = {
   success: {

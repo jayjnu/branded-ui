@@ -7,9 +7,7 @@ const initialOrders: readonly Order[] = [
   { id: "2", name: "Team plan" },
 ];
 
-export const OrdersPanel = binding(OrdersUI)((
-  { Layout, Success, Empty, Pending, Failed, Fallback },
-) => {
+export const OrdersPanel = binding(OrdersUI)(({ Layout, States, Fallback }) => {
   function OrdersBinding() {
     const [orders, setOrders] = useState(initialOrders);
     const [status, setStatus] = useState<
@@ -19,10 +17,12 @@ export const OrdersPanel = binding(OrdersUI)((
     if (status === "pending") {
       return (
         <Layout
-          header={<Pending.header.Title />}
-          content={<Pending.content.Skeleton />}
+          header={<States.pending.header.Title />}
+          content={<States.pending.content.Skeleton />}
           footer={
-            <Pending.footer.Cancel onCancel={() => setStatus("ready")} />
+            <States.pending.footer.Cancel
+              onCancel={() => setStatus("ready")}
+            />
           }
         />
       );
@@ -31,11 +31,13 @@ export const OrdersPanel = binding(OrdersUI)((
     if (status === "failed") {
       return (
         <Layout
-          header={<Failed.header.Title />}
+          header={<States.failed.header.Title />}
           content={
-            <Failed.content.Message message="Could not load orders." />
+            <States.failed.content.Message message="Could not load orders." />
           }
-          footer={<Failed.footer.Retry onRetry={() => setStatus("ready")} />}
+          footer={
+            <States.failed.footer.Retry onRetry={() => setStatus("ready")} />
+          }
         />
       );
     }
@@ -52,10 +54,12 @@ export const OrdersPanel = binding(OrdersUI)((
     if (orders.length === 0) {
       return (
         <Layout
-          header={<Empty.header.Title />}
-          content={<Empty.content.Message />}
+          header={<States.empty.header.Title />}
+          content={<States.empty.content.Message />}
           footer={
-            <Empty.footer.Action onReset={() => setOrders(initialOrders)} />
+            <States.empty.footer.Action
+              onReset={() => setOrders(initialOrders)}
+            />
           }
         />
       );
@@ -63,10 +67,10 @@ export const OrdersPanel = binding(OrdersUI)((
 
     return (
       <Layout
-        header={<Success.header.Title />}
-        content={<Success.content.List orders={orders} />}
+        header={<States.success.header.Title />}
+        content={<States.success.content.List orders={orders} />}
         footer={
-          <Success.footer.Actions
+          <States.success.footer.Actions
             onClear={() => setOrders([])}
             onPending={() => setStatus("pending")}
             onFailed={() => setStatus("failed")}

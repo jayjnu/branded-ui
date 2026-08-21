@@ -7,9 +7,7 @@ const initialAccount: Account = {
   plan: "Team",
 };
 
-export const AccountPanel = binding(AccountUI)((
-  { Layout, Success, Empty, Pending, Failed },
-) => {
+export const AccountPanel = binding(AccountUI)(({ Layout, States }) => {
   function AccountBinding() {
     const [account, setAccount] = useState<Account | null>(initialAccount);
     const [status, setStatus] = useState<"ready" | "pending" | "failed">(
@@ -19,10 +17,12 @@ export const AccountPanel = binding(AccountUI)((
     if (status === "pending") {
       return (
         <Layout
-          header={<Pending.header.Title />}
-          content={<Pending.content.Skeleton />}
+          header={<States.pending.header.Title />}
+          content={<States.pending.content.Skeleton />}
           footer={
-            <Pending.footer.Cancel onCancel={() => setStatus("ready")} />
+            <States.pending.footer.Cancel
+              onCancel={() => setStatus("ready")}
+            />
           }
         />
       );
@@ -31,9 +31,11 @@ export const AccountPanel = binding(AccountUI)((
     if (status === "failed") {
       return (
         <Layout
-          header={<Failed.header.Title />}
-          content={<Failed.content.Message />}
-          footer={<Failed.footer.Retry onRetry={() => setStatus("ready")} />}
+          header={<States.failed.header.Title />}
+          content={<States.failed.content.Message />}
+          footer={
+            <States.failed.footer.Retry onRetry={() => setStatus("ready")} />
+          }
         />
       );
     }
@@ -41,10 +43,12 @@ export const AccountPanel = binding(AccountUI)((
     if (!account) {
       return (
         <Layout
-          header={<Empty.header.Title />}
-          content={<Empty.content.Message />}
+          header={<States.empty.header.Title />}
+          content={<States.empty.content.Message />}
           footer={
-            <Empty.footer.Action onRestore={() => setAccount(initialAccount)} />
+            <States.empty.footer.Action
+              onRestore={() => setAccount(initialAccount)}
+            />
           }
         />
       );
@@ -52,10 +56,10 @@ export const AccountPanel = binding(AccountUI)((
 
     return (
       <Layout
-        header={<Success.header.Title />}
-        content={<Success.content.Summary account={account} />}
+        header={<States.success.header.Title />}
+        content={<States.success.content.Summary account={account} />}
         footer={
-          <Success.footer.Actions
+          <States.success.footer.Actions
             onPending={() => setStatus("pending")}
             onFailed={() => setStatus("failed")}
             onClear={() => setAccount(null)}

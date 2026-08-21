@@ -3,9 +3,9 @@
 The page Binding composes independently stateful intermediate Bindings:
 
 ```text
-DashboardPage (Binding → DashboardUI)
+DashboardPage (Binding → SyncUISet)
 ├── OrdersPanel (Binding → OrdersUI)
 └── AccountPanel (Binding → AccountUI)
 ```
 
-Each panel owns its data-state mapping while the page Binding only owns page composition.
+Each panel owns its async data-state mapping while the page Binding consumes a SyncUISet and only owns page composition.

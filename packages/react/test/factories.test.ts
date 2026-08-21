@@ -5,7 +5,13 @@ import type {
   ReactNode,
 } from "react";
 import { describe, expect, expectTypeOf, it } from "vite-plus/test";
-import { asyncUI, binding, layoutUI, pureUI } from "../src/index.js";
+import {
+  asyncUI,
+  binding,
+  layoutUI,
+  pureUI,
+  syncUI,
+} from "../src/index.js";
 
 describe("React factories", () => {
   it("brands a pure component without wrapping or mutating it", () => {
@@ -43,6 +49,32 @@ describe("React factories", () => {
       header: ReactNode;
       content: ReactNode;
     }>();
+  });
+
+  it("brands sync UI slots without changing the declaration", () => {
+    const layout = layoutUI({
+      component: (props: { content: ReactNode }) => props.content,
+      slots: ["content"],
+    });
+    const config = {
+      layout,
+      slots: {
+        content: { View: (props: { label: string }) => props.label },
+      },
+    };
+    const ui = syncUI(config);
+
+    expect(ui).toBe(config);
+    expect(ui.slots.content.View).toBe(config.slots.content.View);
+
+    const component = () => null;
+    expect(
+      binding(ui)(({ Layout, Slots }) => {
+        expect(Layout).toBe(layout.component);
+        expect(Slots).toBe(ui.slots);
+        return component;
+      }),
+    ).toBe(component);
   });
 
   it("brands nested async state components without changing the declaration", () => {
@@ -83,7 +115,7 @@ describe("React factories", () => {
     >().toEqualTypeOf<{ orderId: string }>();
   });
 
-  it("injects the Layout component and PascalCase state groups", () => {
+  it("injects the Layout component, States, and Fallback", () => {
     const layout = layoutUI({
       component: (props: { content: ReactNode }) => props.content,
       slots: ["content"],
@@ -109,13 +141,10 @@ describe("React factories", () => {
     let definitions = 0;
 
     const bounded = binding(ui)(
-      ({ Layout, Success, Empty, Pending, Failed, Fallback }) => {
+      ({ Layout, States, Fallback }) => {
         definitions += 1;
         expect(Layout).toBe(layout.component);
-        expect(Success).toBe(ui.states.success);
-        expect(Empty).toBe(ui.states.empty);
-        expect(Pending).toBe(ui.states.pending);
-        expect(Failed).toBe(ui.states.failed);
+        expect(States).toBe(ui.states);
         expect(Fallback.Layout).toBe(fallbackLayout.component);
         expect(Fallback.content).toBe(ui.fallback?.slots.content);
         return component;

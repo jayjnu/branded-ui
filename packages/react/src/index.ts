@@ -10,6 +10,8 @@ import type {
   LayoutSlots,
   LayoutUI,
   PureUI,
+  SyncUISet,
+  UIContract,
 } from "@jayjnu/branded-ui";
 
 type ReactComponent = ComponentType<any> | ExoticComponent<any>;
@@ -82,14 +84,20 @@ type ReactFallback<UI extends AsyncUISet> = [FallbackContract<UI>] extends [
   : FallbackContract<UI> extends FallbackUI<infer Layout, infer Slots>
     ? { readonly Layout: Layout["component"] } & Slots
     : undefined;
-type ReactUISlots<UI extends AsyncUISet> = {
+type ReactAsyncUISlots<UI extends AsyncUISet> = {
   readonly Layout: UI["layout"]["component"];
-  readonly Success: UI["states"]["success"];
-  readonly Empty: UI["states"]["empty"];
-  readonly Pending: UI["states"]["pending"];
-  readonly Failed: UI["states"]["failed"];
+  readonly States: UI["states"];
   readonly Fallback: ReactFallback<UI>;
 };
+type ReactSyncUISlots<UI extends SyncUISet> = {
+  readonly Layout: UI["layout"]["component"];
+  readonly Slots: UI["slots"];
+};
+type ReactUISlots<UI extends UIContract> = UI extends SyncUISet
+  ? ReactSyncUISlots<UI>
+  : UI extends AsyncUISet
+    ? ReactAsyncUISlots<UI>
+    : never;
 
 export function pureUI<const Component extends ReactComponent>(
   component: Unbranded<Component>,
@@ -116,6 +124,16 @@ export function layoutUI<
     Slots,
     Pick<ComponentProps<Component>, Slots[number]>
   >;
+}
+
+export function syncUI<
+  const Layout extends LayoutUI,
+  const Slots extends StateMap<Layout>,
+>(config: {
+  readonly layout: Layout;
+  readonly slots: Slots & StateInput<Layout, NoInfer<Slots>>;
+}): SyncUISet<Layout, BrandedState<Slots>> {
+  return config as unknown as SyncUISet<Layout, BrandedState<Slots>>;
 }
 
 export function asyncUI<
@@ -157,24 +175,26 @@ export function asyncUI<
   >;
 }
 
-export function binding<const UI extends AsyncUISet>(ui: UI) {
+export function binding<const UI extends UIContract>(ui: UI) {
   return function<const Component extends ReactComponent>(
     define: (slots: ReactUISlots<UI>) => Unbranded<Component>,
   ): Binding<Component, UI> {
-    const component = define({
-      Layout: ui.layout.component,
-      Success: ui.states.success,
-      Empty: ui.states.empty,
-      Pending: ui.states.pending,
-      Failed: ui.states.failed,
-      Fallback: (ui.fallback
-        ? {
-            Layout: ui.fallback.layout.component,
-            ...ui.fallback.slots,
-          }
-        : undefined) as unknown as ReactFallback<UI>,
-    });
+    const slots = ("states" in ui
+      ? {
+          Layout: ui.layout.component,
+          States: ui.states,
+          Fallback: ui.fallback
+            ? {
+                Layout: ui.fallback.layout.component,
+                ...ui.fallback.slots,
+              }
+            : undefined,
+        }
+      : {
+          Layout: ui.layout.component,
+          Slots: ui.slots,
+        }) as unknown as ReactUISlots<UI>;
 
-    return component as unknown as Binding<Component, UI>;
+    return define(slots) as unknown as Binding<Component, UI>;
   };
 }
