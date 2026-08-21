@@ -38,8 +38,27 @@ export default defineConfig({
 | Rule | Checks |
 | --- | --- |
 | `correct-slot` | A directly referenced `States`, `Slots`, exhaustive-case, or Suspense fallback component stays in its declared Layout slot. |
-| `no-binding-import-in-ui` | A module declaring `pureUI`, `layoutUI`, `syncUI`, or `asyncUI` does not import a `.binding` module. |
+| `no-binding-import-in-ui` | A module declaring `pureUI`, `layoutUI`, `syncUI`, or `asyncUI` does not import a file matching the configured Binding suffixes. |
 | `no-raw-component-export` | Exported PascalCase function components use a Branded UI factory instead of a raw function, `memo`, or `forwardRef`. |
+
+### Custom Binding filenames
+
+The default Binding filename suffix is `.binding`. Override it when a project uses another convention:
+
+```json
+{
+  "rules": {
+    "branded-ui-react/no-binding-import-in-ui": [
+      "error",
+      {
+        "bindingFileSuffixes": [".binding", ".container", ".controller"]
+      }
+    ]
+  }
+}
+```
+
+A suffix matches both extensionless imports such as `./Orders.binding` and imports with a source extension such as `./Orders.binding.tsx`.
 
 ## Source layout
 
@@ -58,7 +77,7 @@ src/
 These rules intentionally use Oxlint's file-local AST and are not type-aware.
 
 - `correct-slot` only follows direct member expressions such as `Success.content.List`. It does not recover provenance after assigning, destructuring, returning, or re-exporting a component under another name.
-- `no-binding-import-in-ui` recognizes relative import paths ending in `.binding`. It does not inspect barrels, custom filenames, dynamic imports, or the role declared inside another file.
+- `no-binding-import-in-ui` recognizes direct imports matching `bindingFileSuffixes`. It does not inspect barrels, dynamic imports, or the role declared inside another file.
 - `no-raw-component-export` treats exported PascalCase functions as React components. It can flag a PascalCase non-component function and does not recognize component-producing wrappers other than `memo` and `forwardRef`.
 - Lexically shadowing an injected name can reduce rule accuracy because the plugin does not have TypeScript symbol identity.
 - The plugin does not detect transitive dependencies, role cycles, or project-wide composition violations.

@@ -17,12 +17,21 @@ test("reports direct Branded UI architecture violations", async () => {
     const configPath = path.join(directory, ".oxlintrc.json");
     await writeFile(
       configPath,
-      JSON.stringify({ jsPlugins: [pluginPath], rules: recommended }),
+      JSON.stringify({
+        jsPlugins: [pluginPath],
+        rules: {
+          ...recommended,
+          "branded-ui-react/no-binding-import-in-ui": [
+            "error",
+            { bindingFileSuffixes: [".controller"] },
+          ],
+        },
+      }),
     );
     await writeFile(
       sourcePath,
       `import { asyncUI, binding } from "@jayjnu/branded-ui-react";
-import { Page } from "./Page.binding";
+import { Page } from "./Page.controller";
 const UI = asyncUI({});
 export const RawView = () => <div />;
 export const Bound = binding(UI)(({ Layout, States }) => () => (

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vp dev",
     "build": "tsc -p tsconfig.json && vp build",
-    "lint": "vp lint src --react-plugin --jsx-a11y-plugin",
+    "lint": "vp lint src --config .oxlintrc.json --react-plugin --jsx-a11y-plugin",
     "test": "vp test --dom",
     "typecheck": "tsc -p tsconfig.json"
   },
