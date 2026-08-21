@@ -1,7 +1,9 @@
+import { createElement, Suspense as ReactSuspense } from "react";
 import type {
   ComponentProps,
   ComponentType,
   ExoticComponent,
+  ReactNode,
 } from "react";
 import type {
   AsyncUISet,
@@ -13,6 +15,9 @@ import type {
   SyncUISet,
   UIContract,
 } from "@jayjnu/branded-ui";
+
+declare const exhaustiveResult: unique symbol;
+declare const fallbackStates: unique symbol;
 
 type ReactComponent = ComponentType<any> | ExoticComponent<any>;
 type BrandedComponent = PureUI | Binding;
@@ -69,6 +74,21 @@ type StandardAsyncStates = Readonly<Record<string, unknown>> & {
   readonly pending: unknown;
   readonly failed: unknown;
 };
+type ExhaustiveResult<States, Output extends ReactNode> = {
+  readonly [exhaustiveResult]: {
+    readonly states: States;
+    readonly output: Output;
+  };
+};
+type ExhaustiveCases<States extends Readonly<Record<string, unknown>>> = {
+  readonly [State in keyof States]: (ui: States[State]) => ReactNode;
+};
+type ExactExhaustiveCases<
+  States extends Readonly<Record<string, unknown>>,
+  Cases extends ExhaustiveCases<States>,
+> = Cases & {
+  readonly [State in Exclude<keyof Cases, keyof States>]: never;
+};
 type StatesInput<
   Layout extends LayoutUI,
   States extends AsyncStateMap<Layout>,
@@ -100,7 +120,9 @@ type ReactFallback<UI extends AsyncUISet> = [FallbackContract<UI>] extends [
 ]
   ? undefined
   : FallbackContract<UI> extends FallbackUI<infer Layout, infer Slots>
-    ? { readonly Layout: Layout["component"] } & Slots
+    ? { readonly Layout: Layout["component"] } & Slots & {
+        readonly [fallbackStates]: UI["states"];
+      }
     : undefined;
 type ReactAsyncUISlots<UI extends AsyncUISet> = {
   readonly Layout: UI["layout"]["component"];
@@ -116,6 +138,31 @@ type ReactUISlots<UI extends UIContract> = UI extends SyncUISet
   : UI extends AsyncUISet
     ? ReactAsyncUISlots<UI>
     : never;
+type FallbackProjection = {
+  readonly [fallbackStates]: Readonly<Record<string, unknown>>;
+};
+// ponytail: proof-preserving function components only; add an explicit exotic adapter if bindings need refs.
+type ExhaustiveDefinitionFor<States> = (
+  props: any,
+) =>
+  | ExhaustiveResult<States, ReactNode>
+  | Promise<ExhaustiveResult<States, ReactNode>>;
+type ExhaustiveDefinition<UI extends AsyncUISet> = ExhaustiveDefinitionFor<
+  UI["states"]
+>;
+type UnwrapExhaustiveReturn<Value> = Value extends ExhaustiveResult<
+  unknown,
+  infer Output
+>
+  ? Output
+  : Value extends Promise<infer Result>
+    ? Promise<UnwrapExhaustiveReturn<Result>>
+    : never;
+type UnwrapExhaustiveDefinition<Definition> = Definition extends (
+  ...args: infer Args
+) => infer Result
+  ? (...args: Args) => UnwrapExhaustiveReturn<Result>
+  : never;
 
 export function pureUI<const Component extends ReactComponent>(
   component: Unbranded<Component>,
@@ -181,13 +228,70 @@ export namespace asyncUI {
   ): States {
     return states;
   }
+
+  export function exhaustive<
+    const States extends Readonly<Record<string, unknown>>,
+    const State extends keyof States,
+    const Cases extends ExhaustiveCases<States>,
+  >(
+    state: State,
+    states: States,
+    cases: ExactExhaustiveCases<States, Cases>,
+  ): ExhaustiveResult<States, ReturnType<Cases[keyof Cases]>> {
+    const render = cases[state] as (
+      ui: States[State],
+    ) => ReturnType<Cases[keyof Cases]>;
+    return render(states[state]) as unknown as ExhaustiveResult<
+      States,
+      ReturnType<Cases[keyof Cases]>
+    >;
+  }
 }
 
-export function binding<const UI extends UIContract>(ui: UI) {
-  return function<const Component extends ReactComponent>(
-    define: (slots: ReactUISlots<UI>) => Unbranded<Component>,
-  ): Binding<Component, UI> {
-    const slots = ("states" in ui
+export function suspense<const Fallback extends FallbackProjection>(
+  fallback: Fallback,
+  renderFallback: (fallback: Fallback) => ReactNode,
+) {
+  return function<
+    const Definition extends ExhaustiveDefinitionFor<
+      Fallback[typeof fallbackStates]
+    >,
+  >(
+    content: Definition,
+  ): (
+    ...args: Parameters<Definition>
+  ) => ExhaustiveResult<Fallback[typeof fallbackStates], ReactNode> {
+    return function (...args) {
+      return createElement(
+        ReactSuspense,
+        { fallback: renderFallback(fallback) },
+        createElement(
+          content as unknown as ComponentType<any>,
+          args[0] ?? null,
+        ),
+      ) as unknown as ExhaustiveResult<
+        Fallback[typeof fallbackStates],
+        ReactNode
+      >;
+    };
+  };
+}
+
+export function binding<const UI extends SyncUISet>(
+  ui: UI,
+): <const Component extends ReactComponent>(
+  define: (slots: ReactSyncUISlots<UI>) => Unbranded<Component>,
+) => Binding<Component, UI>;
+export function binding<const UI extends AsyncUISet>(
+  ui: UI,
+): <const Definition extends ExhaustiveDefinition<UI>>(
+  define: (slots: ReactAsyncUISlots<UI>) => Definition,
+) => Binding<UnwrapExhaustiveDefinition<Definition>, UI>;
+export function binding(
+  ui: UIContract,
+): (define: (slots: any) => any) => any {
+  return function (define) {
+    const slots = "states" in ui
       ? {
           Layout: ui.layout.component,
           States: ui.states,
@@ -201,8 +305,8 @@ export function binding<const UI extends UIContract>(ui: UI) {
       : {
           Layout: ui.layout.component,
           Slots: ui.slots,
-        }) as unknown as ReactUISlots<UI>;
+        };
 
-    return define(slots) as unknown as Binding<Component, UI>;
+    return define(slots as ReactUISlots<UIContract>);
   };
 }

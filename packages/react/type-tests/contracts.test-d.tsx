@@ -12,6 +12,7 @@ import {
   binding,
   layoutUI,
   pureUI,
+  suspense,
   syncUI,
 } from "@jayjnu/branded-ui-react";
 
@@ -133,12 +134,39 @@ const OrdersPage = binding(OrdersUI)(({ Layout, States, Fallback }) => {
     >
   >;
 
-  return (props: { orderId: string }) => (
-    <Layout
-      header={<States.success.header.Toolbar />}
-      content={<States.success.content.List {...props} />}
-      footer={<States.success.footer.Pagination />}
+  return (props: { orderId: string }) =>
+    asyncUI.exhaustive("success", States, {
+      success: (Success) => (
+        <Layout
+          header={<Success.header.Toolbar />}
+          content={<Success.content.List {...props} />}
+          footer={<Success.footer.Pagination />}
+        />
+      ),
+      empty: () => null,
+      pending: () => null,
+      failed: () => null,
+      refreshing: () => null,
+    });
+});
+
+const OrdersFallbackPage = binding(OrdersUI)(({ States, Fallback }) => {
+  // @ts-expect-error Suspense content must return an exhaustive proof
+  suspense(Fallback, () => null)(() => null);
+
+  return suspense(Fallback, (CurrentFallback) => (
+    <CurrentFallback.Layout
+      content={<CurrentFallback.content.Message message="Failed" />}
+      action={<CurrentFallback.action.Reset onReset={() => undefined} />}
     />
+  ))(() =>
+    asyncUI.exhaustive("success", States, {
+      success: () => null,
+      empty: () => null,
+      pending: () => null,
+      failed: () => null,
+      refreshing: () => null,
+    }),
   );
 });
 
@@ -191,6 +219,8 @@ const _syncContract: SyncUISet = DashboardUI;
 const _dashboardBinding: Binding<unknown, typeof DashboardUI> = DashboardPage;
 const _componentContract: PureUI = OrdersUI.states.success.content.List;
 const _ordersBinding: Binding<unknown, typeof OrdersUI> = OrdersPage;
+const _ordersElement = <OrdersPage orderId="1" />;
+const _ordersFallbackElement = <OrdersFallbackPage />;
 const StandaloneView = pureUI((props: { label: string }) => (
   <div>{props.label}</div>
 ));
@@ -277,8 +307,62 @@ binding(CustomStatesUI)(({ States }) => {
   type _CustomStatesAreInferred = Assert<
     Equal<keyof typeof States, "idle" | "refreshing">
   >;
-  return () => <States.refreshing.content.Progress />;
+
+  return (props: { state: keyof typeof States }) =>
+    asyncUI.exhaustive(props.state, States, {
+      idle: (Idle) => <Idle.content.Message />,
+      refreshing: (Refreshing) => <Refreshing.content.Progress />,
+    });
 });
+
+const IncompleteCustomCases = {
+  idle: () => null,
+};
+
+// @ts-expect-error exhaustive requires a handler for every inferred state
+asyncUI.exhaustive("idle", CustomStatesUI.states, IncompleteCustomCases);
+
+const CompleteCustomCases = {
+  idle: () => null,
+  refreshing: () => null,
+};
+
+binding(OrdersUI)(({ Fallback }) => {
+  const ForeignContent = () =>
+    asyncUI.exhaustive("idle", CustomStatesUI.states, CompleteCustomCases);
+
+  // @ts-expect-error Suspense fallback and content must consume the same UI states
+  return suspense(Fallback, () => null)(ForeignContent);
+});
+
+// @ts-expect-error exhaustive only accepts inferred state names
+asyncUI.exhaustive("missing", CustomStatesUI.states, CompleteCustomCases);
+
+const AsyncCustomPage = binding(CustomStatesUI)(({ States }) => {
+  return async function AsyncBinding() {
+    return asyncUI.exhaustive("idle", States, CompleteCustomCases);
+  };
+});
+
+const _asyncCustomElement = <AsyncCustomPage />;
+
+const ExtraCustomCases = {
+  ...CompleteCustomCases,
+  missing: () => null,
+};
+
+// @ts-expect-error exhaustive rejects handlers for undeclared states
+asyncUI.exhaustive("idle", CustomStatesUI.states, ExtraCustomCases);
+
+// @ts-expect-error async Binding components must return an exhaustive proof
+binding(CustomStatesUI)(() => () => null);
+
+// @ts-expect-error every Async Binding return path must carry the proof
+binding(CustomStatesUI)(({ States }) => (props: { valid: boolean }) =>
+  props.valid
+    ? asyncUI.exhaustive("idle", States, CompleteCustomCases)
+    : null,
+);
 
 asyncUI({
   layout: OrdersLayout,
@@ -372,9 +456,17 @@ const CustomersUI = asyncUI({
   },
 });
 
-binding(CustomersUI)(({ Fallback }) => {
+binding(CustomersUI)(({ States, Fallback }) => {
   type _FallbackIsOptional = Assert<Equal<typeof Fallback, undefined>>;
-  return () => null;
+  // @ts-expect-error Suspense requires a declared fallback contract
+  suspense(Fallback, () => null);
+  return () =>
+    asyncUI.exhaustive("empty", States, {
+      success: () => null,
+      empty: () => null,
+      pending: () => null,
+      failed: () => null,
+    });
 });
 
 // @ts-expect-error the Binding carries the UI contract it consumes

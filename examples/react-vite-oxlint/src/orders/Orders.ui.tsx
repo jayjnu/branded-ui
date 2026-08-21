@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { asyncUI, layoutUI } from "@jayjnu/branded-ui-react";
+import { asyncUI, layoutUI, pureUI } from "@jayjnu/branded-ui-react";
 
 export type Order = {
   id: string;
@@ -25,119 +25,72 @@ const OrdersLayout = layoutUI({
   slots: ["header", "content", "footer"],
 });
 
-const OrdersFallbackLayout = layoutUI({
-  component: (props: { content: ReactNode; action: ReactNode }) => (
-    <section role="alert">
-      <div>{props.content}</div>
-      <footer>{props.action}</footer>
-    </section>
-  ),
-  slots: ["content", "action"],
-});
-
 const Header = () => <h2 id="orders-title">Orders</h2>;
+const OrdersList = (props: { orders: readonly Order[] }) => (
+  <ul>
+    {props.orders.map((order) => (
+      <li key={order.id}>{order.name}</li>
+    ))}
+  </ul>
+);
 
 export const OrdersUI = asyncUI({
   layout: OrdersLayout,
-  states: asyncUI.states({
+  states: {
     success: {
-      header: {
-        Title: Header,
-      },
-      content: {
-        List: (props: { orders: readonly Order[] }) => (
-          <ul>
-            {props.orders.map((order) => (
-              <li key={order.id}>{order.name}</li>
-            ))}
-          </ul>
-        ),
-      },
+      header: { Title: Header },
+      content: { List: OrdersList },
       footer: {
         Actions: (props: {
-          onClear: () => void;
-          onPending: () => void;
+          onRefresh: () => void;
+          onEmpty: () => void;
           onFailed: () => void;
-          onFallback: () => void;
         }) => (
           <>
-            <button type="button" onClick={props.onClear}>
-              Clear orders
+            <button type="button" onClick={props.onRefresh}>
+              Refresh orders
             </button>
-            <button type="button" onClick={props.onPending}>
-              Show pending
+            <button type="button" onClick={props.onEmpty}>
+              Load empty result
             </button>
             <button type="button" onClick={props.onFailed}>
-              Show failure
-            </button>
-            <button type="button" onClick={props.onFallback}>
-              Show fallback
+              Load query error
             </button>
           </>
         ),
       },
     },
     empty: {
-      header: {
-        Title: Header,
-      },
-      content: {
-        Message: () => <p>No orders yet.</p>,
-      },
+      header: { Title: Header },
+      content: { Message: () => <p>No orders yet.</p> },
       footer: {
-        Action: (props: { onReset: () => void }) => (
-          <button type="button" onClick={props.onReset}>
-            Reset orders
+        Action: (props: { onLoad: () => void }) => (
+          <button type="button" onClick={props.onLoad}>
+            Load orders
           </button>
         ),
       },
     },
-    pending: {
-      header: {
-        Title: Header,
-      },
-      content: {
-        Skeleton: () => <p>Loading orders…</p>,
-      },
-      footer: {
-        Cancel: (props: { onCancel: () => void }) => (
-          <button type="button" onClick={props.onCancel}>
-            Cancel
-          </button>
-        ),
-      },
+    refreshing: {
+      header: { Title: Header },
+      content: { List: OrdersList },
+      footer: { Status: () => <output>Refreshing orders…</output> },
     },
-    failed: {
-      header: {
-        Title: Header,
-      },
-      content: {
-        Message: (props: { message: string }) => (
-          <p role="alert">{props.message}</p>
-        ),
-      },
-      footer: {
-        Retry: (props: { onRetry: () => void }) => (
-          <button type="button" onClick={props.onRetry}>
-            Retry
-          </button>
-        ),
-      },
-    },
-  }),
+  },
   fallback: {
-    layout: OrdersFallbackLayout,
+    layout: OrdersLayout,
     slots: {
-      content: {
-        Message: () => <p>An unexpected application state occurred.</p>,
-      },
-      action: {
-        Reset: (props: { onReset: () => void }) => (
-          <button type="button" onClick={props.onReset}>
-            Reset application
-          </button>
-        ),
-      },
+      header: { Title: Header },
+      content: { Skeleton: () => <p>Loading orders…</p> },
     },
   },
 });
+
+export const OrdersError = pureUI((props: { onRetry: () => void }) => (
+  <section role="alert">
+    <p>Could not load orders.</p>
+    <button type="button" onClick={props.onRetry}>
+      Retry
+    </button>
+  </section>
+));

@@ -1,4 +1,8 @@
-import { forwardRef } from "react";
+import {
+  forwardRef,
+  isValidElement,
+  Suspense as ReactSuspense,
+} from "react";
 import type {
   ComponentProps,
   ComponentPropsWithRef,
@@ -10,6 +14,7 @@ import {
   binding,
   layoutUI,
   pureUI,
+  suspense,
   syncUI,
 } from "../src/index.js";
 
@@ -61,6 +66,21 @@ describe("React factories", () => {
     };
 
     expect(asyncUI.states(states)).toBe(states);
+  });
+
+  it("dispatches an exhaustive async state case", () => {
+    const states = {
+      idle: { content: { Message: () => null } },
+      ready: { content: { View: () => null } },
+    };
+
+    expect(
+      asyncUI.exhaustive("ready", states, {
+        idle: () => "idle",
+        ready: (Ready) =>
+          Ready.content.View === states.ready.content.View ? "ready" : "wrong",
+      }),
+    ).toBe("ready");
   });
 
   it("brands sync UI slots without changing the declaration", () => {
@@ -153,7 +173,13 @@ describe("React factories", () => {
         slots: { content: { Message: () => null } },
       },
     });
-    const component = (props: { orderId: string }) => props.orderId;
+    const component = (props: { orderId: string }) =>
+      asyncUI.exhaustive("success", ui.states, {
+        success: () => props.orderId,
+        empty: () => props.orderId,
+        pending: () => props.orderId,
+        failed: () => props.orderId,
+      });
     let definitions = 0;
 
     const bounded = binding(ui)(
@@ -167,9 +193,26 @@ describe("React factories", () => {
       },
     );
 
+    let fallbackRenders = 0;
+    const suspenseComponent = binding(ui)(({ Fallback }) =>
+      suspense(Fallback, () => {
+        fallbackRenders += 1;
+        return "fallback";
+      })(component),
+    );
+    const suspenseElement = suspenseComponent({ orderId: "1" });
+
     expect(definitions).toBe(1);
     expect(bounded).toBe(component);
+    expect(fallbackRenders).toBe(1);
+    expect(
+      isValidElement(suspenseElement) &&
+        suspenseElement.type === ReactSuspense,
+    ).toBe(true);
     expectTypeOf<ComponentProps<typeof bounded>>().toEqualTypeOf<{
+      orderId: string;
+    }>();
+    expectTypeOf<ComponentProps<typeof suspenseComponent>>().toEqualTypeOf<{
       orderId: string;
     }>();
   });

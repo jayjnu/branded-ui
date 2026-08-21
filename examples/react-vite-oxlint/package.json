@@ -12,8 +12,10 @@
   "dependencies": {
     "@jayjnu/branded-ui": "workspace:*",
     "@jayjnu/branded-ui-react": "workspace:*",
+    "@tanstack/react-query": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "react-error-boundary": "catalog:"
   },
   "devDependencies": {
     "@jayjnu/branded-ui-repo-tools": "workspace:*",
