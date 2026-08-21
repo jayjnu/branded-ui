@@ -7,7 +7,7 @@ const initialOrders: readonly Order[] = [
   { id: "2", name: "Team plan" },
 ];
 
-export const OrdersPage = binding(OrdersUI)((
+export const OrdersPanel = binding(OrdersUI)((
   { Layout, Success, Empty, Pending, Failed, Fallback },
 ) => {
   function OrdersBinding() {

@@ -13,11 +13,11 @@ type OrdersLayoutProps = {
 };
 
 const OrdersLayoutComponent = (props: OrdersLayoutProps) => (
-  <main>
+  <section aria-labelledby="orders-title">
     <header>{props.header}</header>
-    <section>{props.content}</section>
+    <div>{props.content}</div>
     {props.footer && <footer>{props.footer}</footer>}
-  </main>
+  </section>
 );
 
 const OrdersLayout = layoutUI({
@@ -27,15 +27,15 @@ const OrdersLayout = layoutUI({
 
 const OrdersFallbackLayout = layoutUI({
   component: (props: { content: ReactNode; action: ReactNode }) => (
-    <main role="alert">
-      <section>{props.content}</section>
+    <section role="alert">
+      <div>{props.content}</div>
       <footer>{props.action}</footer>
-    </main>
+    </section>
   ),
   slots: ["content", "action"],
 });
 
-const Header = () => <h1>Orders</h1>;
+const Header = () => <h2 id="orders-title">Orders</h2>;
 
 export const OrdersUI = asyncUI({
   layout: OrdersLayout,
