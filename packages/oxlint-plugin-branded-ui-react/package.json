@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Oxlint architecture rules for Branded UI.",
   "type": "module",
-  "files": ["src"],
+  "files": ["src", "README.md"],
   "exports": {
     ".": {
       "types": "./src/index.d.ts",

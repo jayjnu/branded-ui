@@ -1,0 +1,5 @@
+export const recommended = {
+  "branded-ui-react/correct-slot": "error",
+  "branded-ui-react/no-binding-import-in-ui": "error",
+  "branded-ui-react/no-raw-component-export": "error",
+};
