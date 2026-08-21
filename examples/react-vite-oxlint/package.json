@@ -7,6 +7,7 @@
     "dev": "vp dev",
     "build": "tsc -p tsconfig.json && vp build",
     "lint": "vp lint src --react-plugin --jsx-a11y-plugin",
+    "test": "vp test --dom",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
@@ -21,6 +22,7 @@
     "@jayjnu/branded-ui-repo-tools": "workspace:*",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "happy-dom": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   }
