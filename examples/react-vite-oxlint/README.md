@@ -20,3 +20,5 @@ resolved data              → success
 ```
 
 The fallback contract defines Suspense presentation without creating a synthetic application state. `AccountPanel` keeps explicit local states to demonstrate that AsyncUI supports both boundary-driven and result-driven flows.
+
+The example also enables `@jayjnu/branded-ui-oxlint` for direct slot placement, Binding dependency, and raw component export checks.

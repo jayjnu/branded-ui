@@ -3,7 +3,6 @@
   "private": true,
   "scripts": {
     "build": "pnpm -r --if-present build",
-    "check": "pnpm --filter @jayjnu/branded-ui-checker build && node packages/checker/dist/cli.js examples/react-vite-oxlint/tsconfig.json",
     "lint": "pnpm -r --if-present run lint",
     "typecheck": "pnpm --filter @jayjnu/branded-ui build && pnpm --filter @jayjnu/branded-ui-react build && pnpm -r --if-present typecheck",
     "test": "pnpm build && pnpm -r --if-present test"

@@ -1,0 +1,8 @@
+{
+  "jsPlugins": ["@jayjnu/branded-ui-oxlint"],
+  "rules": {
+    "branded-ui/correct-slot": "error",
+    "branded-ui/no-binding-import-in-ui": "error",
+    "branded-ui/no-raw-component-export": "error"
+  }
+}

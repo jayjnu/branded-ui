@@ -78,21 +78,22 @@ export const Orders = binding(OrdersUI)(
 
 Query errors are handled by an ancestor Error Boundary. Query-specific reset behavior remains application composition rather than a Branded UI contract.
 
-## Checker
+## Oxlint plugin
 
-`@jayjnu/branded-ui-checker` adds project-wide checks that TypeScript cannot express after JSX values become `ReactNode`.
+`@jayjnu/branded-ui-oxlint` provides fast, file-local architecture checks.
 
-```sh
-branded-ui-check tsconfig.json
+```json
+{
+  "jsPlugins": ["@jayjnu/branded-ui-oxlint"],
+  "rules": {
+    "branded-ui/correct-slot": "error",
+    "branded-ui/no-binding-import-in-ui": "error",
+    "branded-ui/no-raw-component-export": "error"
+  }
+}
 ```
 
-Initial diagnostics cover:
-
-- `BUI001`: a state component is rendered into the wrong Layout slot
-- `BUI002`: a UI declaration module imports a Binding module
-- `BUI003`: a PascalCase component is exported without a Branded UI factory
-
-The checker resolves the project from its TypeScript config and exits non-zero when diagnostics are found.
+The initial rules catch directly referenced components in the wrong Layout slot, `.binding` imports from UI declaration modules, and unbranded PascalCase component exports. Cross-file semantic analysis is intentionally deferred.
 
 ## Examples
 

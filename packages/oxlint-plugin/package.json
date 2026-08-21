@@ -1,0 +1,25 @@
+{
+  "name": "@jayjnu/branded-ui-oxlint",
+  "version": "0.1.0",
+  "description": "Oxlint architecture rules for Branded UI.",
+  "type": "module",
+  "files": ["src"],
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js"
+    }
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@oxlint/plugins": "^1.73.0"
+  },
+  "devDependencies": {
+    "oxlint": "catalog:"
+  },
+  "keywords": ["oxlint", "react", "architecture"],
+  "author": "Jin Woo Jung",
+  "license": "MIT"
+}
