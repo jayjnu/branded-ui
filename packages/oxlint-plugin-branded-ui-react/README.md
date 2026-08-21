@@ -53,6 +53,14 @@ src/
     └── no-raw-component-export.js
 ```
 
-## Scope
+## Limitations
 
-These rules intentionally use Oxlint's file-local AST. They do not follow component aliases, barrel re-exports, or cross-file TypeScript symbol identity. Type contracts remain responsible for props, states, fallback identity, and exhaustive Binding proofs.
+These rules intentionally use Oxlint's file-local AST and are not type-aware.
+
+- `correct-slot` only follows direct member expressions such as `Success.content.List`. It does not recover provenance after assigning, destructuring, returning, or re-exporting a component under another name.
+- `no-binding-import-in-ui` recognizes relative import paths ending in `.binding`. It does not inspect barrels, custom filenames, dynamic imports, or the role declared inside another file.
+- `no-raw-component-export` treats exported PascalCase functions as React components. It can flag a PascalCase non-component function and does not recognize component-producing wrappers other than `memo` and `forwardRef`.
+- Lexically shadowing an injected name can reduce rule accuracy because the plugin does not have TypeScript symbol identity.
+- The plugin does not detect transitive dependencies, role cycles, or project-wide composition violations.
+
+TypeScript contracts remain responsible for props, states, fallback identity, and exhaustive Binding proofs. Cross-file semantic checks require a future type-aware analyzer or Language Service integration.
