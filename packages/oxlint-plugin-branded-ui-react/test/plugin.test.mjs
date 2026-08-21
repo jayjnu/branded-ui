@@ -10,7 +10,7 @@ import { recommended } from "../src/index.js";
 const pluginPath = fileURLToPath(new URL("../src/index.js", import.meta.url));
 
 test("reports direct Branded UI architecture violations", async () => {
-  const directory = await mkdtemp(path.join(tmpdir(), "branded-ui-oxlint-"));
+  const directory = await mkdtemp(path.join(tmpdir(), "branded-ui-react-oxlint-"));
 
   try {
     const sourcePath = path.join(directory, "Broken.ui.tsx");
@@ -40,9 +40,9 @@ void Page;
     const output = `${result.stdout}\n${result.stderr}`;
 
     assert.equal(result.status, 1, output);
-    assert.match(output, /branded-ui\(correct-slot\)/);
-    assert.match(output, /branded-ui\(no-binding-import-in-ui\)/);
-    assert.match(output, /branded-ui\(no-raw-component-export\)/);
+    assert.match(output, /branded-ui-react\(correct-slot\)/);
+    assert.match(output, /branded-ui-react\(no-binding-import-in-ui\)/);
+    assert.match(output, /branded-ui-react\(no-raw-component-export\)/);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

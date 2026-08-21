@@ -80,15 +80,15 @@ Query errors are handled by an ancestor Error Boundary. Query-specific reset beh
 
 ## Oxlint plugin
 
-`@jayjnu/branded-ui-oxlint` provides fast, file-local architecture checks.
+`@jayjnu/oxlint-plugin-branded-ui-react` provides fast, file-local architecture checks for the React adapter.
 
 ```json
 {
-  "jsPlugins": ["@jayjnu/branded-ui-oxlint"],
+  "jsPlugins": ["@jayjnu/oxlint-plugin-branded-ui-react"],
   "rules": {
-    "branded-ui/correct-slot": "error",
-    "branded-ui/no-binding-import-in-ui": "error",
-    "branded-ui/no-raw-component-export": "error"
+    "branded-ui-react/correct-slot": "error",
+    "branded-ui-react/no-binding-import-in-ui": "error",
+    "branded-ui-react/no-raw-component-export": "error"
   }
 }
 ```

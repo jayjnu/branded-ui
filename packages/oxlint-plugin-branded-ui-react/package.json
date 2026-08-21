@@ -1,5 +1,5 @@
 {
-  "name": "@jayjnu/branded-ui-oxlint",
+  "name": "@jayjnu/oxlint-plugin-branded-ui-react",
   "version": "0.1.0",
   "description": "Oxlint architecture rules for Branded UI.",
   "type": "module",

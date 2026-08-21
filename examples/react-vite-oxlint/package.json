@@ -19,7 +19,7 @@
     "react-error-boundary": "catalog:"
   },
   "devDependencies": {
-    "@jayjnu/branded-ui-oxlint": "workspace:*",
+    "@jayjnu/oxlint-plugin-branded-ui-react": "workspace:*",
     "@jayjnu/branded-ui-repo-tools": "workspace:*",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",

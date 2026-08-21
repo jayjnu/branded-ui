@@ -62,12 +62,12 @@ importers:
         specifier: 'catalog:'
         version: 6.1.3(@types/react@19.2.18)(react@19.2.8)
     devDependencies:
-      '@jayjnu/branded-ui-oxlint':
-        specifier: workspace:*
-        version: link:../../packages/oxlint-plugin
       '@jayjnu/branded-ui-repo-tools':
         specifier: workspace:*
         version: link:../../packages/repo-tools
+      '@jayjnu/oxlint-plugin-branded-ui-react':
+        specifier: workspace:*
+        version: link:../../packages/oxlint-plugin-branded-ui-react
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.18
@@ -93,7 +93,7 @@ importers:
         specifier: 'catalog:'
         version: 5.9.3
 
-  packages/oxlint-plugin:
+  packages/oxlint-plugin-branded-ui-react:
     dependencies:
       '@oxlint/plugins':
         specifier: ^1.73.0

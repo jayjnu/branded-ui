@@ -239,13 +239,13 @@ function isPascalCase(value) {
 }
 
 export const recommended = {
-  "branded-ui/correct-slot": "error",
-  "branded-ui/no-binding-import-in-ui": "error",
-  "branded-ui/no-raw-component-export": "error",
+  "branded-ui-react/correct-slot": "error",
+  "branded-ui-react/no-binding-import-in-ui": "error",
+  "branded-ui-react/no-raw-component-export": "error",
 };
 
 export default {
-  meta: { name: "branded-ui" },
+  meta: { name: "branded-ui-react" },
   rules: {
     "correct-slot": correctSlot,
     "no-binding-import-in-ui": noBindingImportInUI,
