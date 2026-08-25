@@ -65,4 +65,4 @@ pnpm typecheck
 pnpm test
 ```
 
-Oxlint checks direct slot placement, UI-to-Binding imports, and raw component exports through `@jayjnu/oxlint-plugin-branded-ui-react`.
+Oxlint checks direct slot placement, UI-to-Binding imports, external calls in Pure UI, and raw component exports through `@jayjnu/oxlint-plugin-branded-ui-react`.
