@@ -2,6 +2,10 @@
   "name": "@jayjnu/branded-ui-react",
   "version": "0.1.1",
   "description": "React factories for Branded UI contracts.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jayjnu/branded-ui"
+  },
   "type": "module",
   "sideEffects": false,
   "files": ["dist"],

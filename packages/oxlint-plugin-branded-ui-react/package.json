@@ -2,6 +2,10 @@
   "name": "@jayjnu/oxlint-plugin-branded-ui-react",
   "version": "0.1.1",
   "description": "Oxlint architecture rules for Branded UI.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jayjnu/branded-ui"
+  },
   "type": "module",
   "files": ["src", "README.md"],
   "exports": {
