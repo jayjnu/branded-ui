@@ -57,6 +57,60 @@ void Page;
   }
 });
 
+test("checks local named export specifiers without touching re-exports", async () => {
+  const directory = await mkdtemp(
+    path.join(tmpdir(), "branded-ui-react-oxlint-"),
+  );
+
+  try {
+    const sourcePath = path.join(directory, "Exports.tsx");
+    const configPath = path.join(directory, ".oxlintrc.json");
+    await writeFile(
+      configPath,
+      JSON.stringify({
+        jsPlugins: [pluginPath],
+        rules: { "branded-ui-react/no-raw-component-export": "error" },
+      }),
+    );
+    await writeFile(
+      sourcePath,
+      `import { pureUI } from "@jayjnu/branded-ui-react";
+
+type TypeOnly = string;
+function RawFunction() { return <div />; }
+const RawArrow = () => <div />;
+const RawWrapped = memo(() => <div />);
+const Branded = pureUI(() => <div />);
+export { RawFunction, RawArrow, RawWrapped, Branded };
+export type { TypeOnly };
+export { type TypeOnly as ExportedType };
+export { External } from "./other";
+`,
+    );
+
+    const result = spawnSync(
+      "oxlint",
+      ["--config", configPath, sourcePath],
+      { encoding: "utf8" },
+    );
+    const output = `${result.stdout}\n${result.stderr}`;
+
+    assert.equal(result.status, 1, output);
+    assert.equal(
+      output.match(/branded-ui-react\(no-raw-component-export\)/g)?.length,
+      3,
+      output,
+    );
+    assert.match(output, /Exported component "RawFunction"/);
+    assert.match(output, /Exported component "RawArrow"/);
+    assert.match(output, /Exported component "RawWrapped"/);
+    assert.doesNotMatch(output, /Exported component "Branded"/);
+    assert.doesNotMatch(output, /Exported component "External"/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test("allows only local and allowlisted calls in Pure UI declarations", async () => {
   const directory = await mkdtemp(
     path.join(tmpdir(), "branded-ui-react-oxlint-"),

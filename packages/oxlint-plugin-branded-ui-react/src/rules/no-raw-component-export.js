@@ -6,11 +6,26 @@ export default {
     },
   },
   create(context) {
+    const localDeclarations = new Map();
+    const reported = new WeakSet();
+
     function report(name) {
+      if (reported.has(name)) return;
+      reported.add(name);
       context.report({
         node: name,
         message: `Exported component "${name.name}" must use a Branded UI factory.`,
       });
+    }
+
+    function checkVariable(item) {
+      if (
+        item.id.type === "Identifier" &&
+        isPascalCase(item.id.name) &&
+        isRawComponent(item.init)
+      ) {
+        report(item.id);
+      }
     }
 
     function checkDeclaration(declaration) {
@@ -24,19 +39,52 @@ export default {
         return;
       }
       if (declaration.type !== "VariableDeclaration") return;
-      for (const item of declaration.declarations) {
+      for (const item of declaration.declarations) checkVariable(item);
+    }
+
+    function collectLocalDeclarations(program) {
+      for (const statement of program.body) {
+        const declaration =
+          statement.type === "ExportNamedDeclaration"
+            ? statement.declaration
+            : statement;
+        if (declaration?.type === "FunctionDeclaration" && declaration.id) {
+          localDeclarations.set(declaration.id.name, declaration);
+        }
+        if (declaration?.type !== "VariableDeclaration") continue;
+        for (const item of declaration.declarations) {
+          if (item.id.type === "Identifier") {
+            localDeclarations.set(item.id.name, item);
+          }
+        }
+      }
+    }
+
+    function checkLocalSpecifiers(node) {
+      if (node.source || node.exportKind === "type") return;
+      for (const specifier of node.specifiers) {
         if (
-          item.id.type === "Identifier" &&
-          isPascalCase(item.id.name) &&
-          isRawComponent(item.init)
+          specifier.type !== "ExportSpecifier" ||
+          specifier.exportKind === "type" ||
+          specifier.local.type !== "Identifier"
         ) {
-          report(item.id);
+          continue;
+        }
+        const declaration = localDeclarations.get(specifier.local.name);
+        if (declaration?.type === "VariableDeclarator") {
+          checkVariable(declaration);
+        } else {
+          checkDeclaration(declaration);
         }
       }
     }
 
     return {
-      ExportNamedDeclaration: (node) => checkDeclaration(node.declaration),
+      Program: collectLocalDeclarations,
+      ExportNamedDeclaration: (node) => {
+        checkDeclaration(node.declaration);
+        checkLocalSpecifiers(node);
+      },
       ExportDefaultDeclaration: (node) => checkDeclaration(node.declaration),
     };
   },
