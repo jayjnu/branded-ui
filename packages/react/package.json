@@ -1,6 +1,6 @@
 {
   "name": "@jayjnu/branded-ui-react",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "React factories for Branded UI contracts.",
   "type": "module",
   "sideEffects": false,

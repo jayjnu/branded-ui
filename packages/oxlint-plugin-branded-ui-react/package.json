@@ -1,6 +1,6 @@
 {
   "name": "@jayjnu/oxlint-plugin-branded-ui-react",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Oxlint architecture rules for Branded UI.",
   "type": "module",
   "files": ["src", "README.md"],
