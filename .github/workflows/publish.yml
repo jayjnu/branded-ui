@@ -4,6 +4,11 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      filter:
+        description: Optional pnpm package filter; empty publishes all packages
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -21,4 +26,12 @@ jobs:
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
-      - run: pnpm -r publish --access public --no-git-checks --provenance
+      - name: Publish packages
+        env:
+          PUBLISH_FILTER: ${{ inputs.filter }}
+        run: |
+          if [ -n "$PUBLISH_FILTER" ]; then
+            pnpm --filter "$PUBLISH_FILTER" publish --access public --no-git-checks --provenance
+          else
+            pnpm -r publish --access public --no-git-checks --provenance
+          fi
