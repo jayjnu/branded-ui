@@ -22,6 +22,14 @@ declare const fallbackStates: unique symbol;
 type ReactComponent = ComponentType<any> | ExoticComponent<any>;
 type BrandedComponent = PureUI | Binding;
 type Unbranded<Component> = Component extends BrandedComponent ? never : Component;
+type SlotComponentInput<Component> = Component extends PureUI
+  ? Component
+  : Component extends Binding
+    ? never
+    : Component;
+type BrandedSlotComponent<Component> = Component extends PureUI
+  ? Component
+  : PureUI<Component>;
 type ComponentMap = Readonly<Record<string, ReactComponent>>;
 type SlotNames<Layout extends LayoutUI> = Layout["slots"][number] & string;
 type RequiredKeys<Value> = {
@@ -43,7 +51,7 @@ type StateMap<Layout extends LayoutUI> = {
 type ComponentInput<Components extends ComponentMap> = {
   readonly [Key in keyof Components]: Key extends string
     ? Key extends Capitalize<Key>
-      ? Unbranded<Components[Key]>
+      ? SlotComponentInput<Components[Key]>
       : never
     : never;
 };
@@ -58,7 +66,7 @@ type StateInput<
     : never;
 };
 type BrandedComponents<Components extends ComponentMap> = {
-  readonly [Key in keyof Components]: PureUI<Components[Key]>;
+  readonly [Key in keyof Components]: BrandedSlotComponent<Components[Key]>;
 };
 type BrandedState<State> = {
   readonly [Slot in keyof State]: NonNullable<State[Slot]> extends ComponentMap

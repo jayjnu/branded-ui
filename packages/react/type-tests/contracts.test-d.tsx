@@ -53,12 +53,17 @@ const OrdersFallbackLayout = layoutUI({
   slots: ["content", "action"],
 });
 
+const PreBrandedToolbar = pureUI(() => <nav />);
+const PreBrandedFallbackMessage = pureUI((props: { message: string }) => (
+  <p>{props.message}</p>
+));
+
 const OrdersUI = asyncUI({
   layout: OrdersLayout,
   states: asyncUI.states({
     success: {
       header: {
-        Toolbar: () => <nav />,
+        Toolbar: PreBrandedToolbar,
       },
       content: {
         List: (props: { orderId: string }) => <div>{props.orderId}</div>,
@@ -103,7 +108,7 @@ const OrdersUI = asyncUI({
     layout: OrdersFallbackLayout,
     slots: {
       content: {
-        Message: (props: { message: string }) => <p>{props.message}</p>,
+        Message: PreBrandedFallbackMessage,
       },
       action: {
         Reset: (props: { onReset: () => void }) => (
@@ -170,11 +175,15 @@ const OrdersFallbackPage = binding(OrdersUI)(({ States, Fallback }) => {
   );
 });
 
+const PreBrandedDashboardView = pureUI((props: { title: string }) => (
+  <p>{props.title}</p>
+));
+
 const DashboardUI = syncUI({
   layout: OrdersLayout,
   slots: {
     header: { Title: () => <h1>Dashboard</h1> },
-    content: { View: (props: { title: string }) => <p>{props.title}</p> },
+    content: { View: PreBrandedDashboardView },
   },
 });
 
@@ -190,6 +199,17 @@ const DashboardPage = binding(DashboardUI)(({ Layout, Slots }) => {
       content={<Slots.content.View {...props} />}
     />
   );
+});
+
+const BoundSlot = binding(DashboardUI)(() => () => null);
+
+syncUI({
+  layout: OrdersLayout,
+  slots: {
+    header: { Title: () => null },
+    // @ts-expect-error Binding components remain invalid sync UI slots
+    content: { View: BoundSlot },
+  },
 });
 
 type _RuntimeSlotNamesArePreserved = Assert<
@@ -212,6 +232,21 @@ type _BindingPropsArePreserved = Assert<
 >;
 type _SyncBindingPropsArePreserved = Assert<
   Equal<ComponentProps<typeof DashboardPage>, { title: string }>
+>;
+type _PreBrandedAsyncSlotIsPreserved = Assert<
+  Equal<
+    typeof OrdersUI.states.success.header.Toolbar,
+    typeof PreBrandedToolbar
+  >
+>;
+type _PreBrandedFallbackSlotIsPreserved = Assert<
+  Equal<
+    NonNullable<typeof OrdersUI.fallback>["slots"]["content"]["Message"],
+    typeof PreBrandedFallbackMessage
+  >
+>;
+type _PreBrandedSyncSlotIsPreserved = Assert<
+  Equal<typeof DashboardUI.slots.content.View, typeof PreBrandedDashboardView>
 >;
 
 const _layoutContract: LayoutUI = OrdersUI.layout;
@@ -276,6 +311,33 @@ const RawStates = {
     content: { Message: () => null },
   },
 };
+
+asyncUI({
+  layout: OrdersLayout,
+  states: {
+    success: {
+      // @ts-expect-error Binding components remain invalid async UI slots
+      header: { Title: BoundSlot },
+      content: { List: () => null },
+    },
+    empty: RawStates.empty,
+    pending: RawStates.pending,
+    failed: RawStates.failed,
+  },
+});
+
+asyncUI({
+  layout: OrdersLayout,
+  states: RawStates,
+  fallback: {
+    layout: OrdersFallbackLayout,
+    slots: {
+      // @ts-expect-error Binding components remain invalid fallback slots
+      content: { Message: BoundSlot },
+      action: { Reset: () => null },
+    },
+  },
+});
 
 const IncompleteStandardStates = {
   success: RawStates.success,
