@@ -10,7 +10,28 @@ export default {
       {
         type: "object",
         properties: {
+          mode: { enum: ["all", "hooks-only"] },
           allowedCalls: {
+            type: "array",
+            items: { type: "string", minLength: 1 },
+            uniqueItems: true,
+          },
+          allowedCallPatterns: {
+            type: "array",
+            items: { type: "string", minLength: 1 },
+            uniqueItems: true,
+          },
+          deniedCallPatterns: {
+            type: "array",
+            items: { type: "string", minLength: 1 },
+            uniqueItems: true,
+          },
+          allowedModules: {
+            type: "array",
+            items: { type: "string", minLength: 1 },
+            uniqueItems: true,
+          },
+          deniedModules: {
             type: "array",
             items: { type: "string", minLength: 1 },
             uniqueItems: true,
@@ -19,12 +40,19 @@ export default {
         additionalProperties: false,
       },
     ],
-    defaultOptions: [{ allowedCalls: [] }],
+    defaultOptions: [{ mode: "all", allowedCalls: [] }],
   },
   create(context) {
-    const allowedCalls = new Set(context.options[0]?.allowedCalls ?? []);
+    const options = context.options[0] ?? {};
+    const mode = options.mode ?? "all";
+    const allowedCalls = new Set(options.allowedCalls ?? []);
+    const allowedCallPatterns = compilePatterns(options.allowedCallPatterns);
+    const deniedCallPatterns = compilePatterns(options.deniedCallPatterns);
+    const allowedModules = compileGlobs(options.allowedModules);
+    const deniedModules = compileGlobs(options.deniedModules);
     const factories = new Map();
-    // ponytail: lexical only; use a type-aware analyzer if aliases must be followed.
+    const imports = new Map();
+    // ponytail: direct imports only; use a type-aware analyzer for general aliases.
     const callbacks = new WeakSet();
     const active = [];
     const candidates = [];
@@ -49,9 +77,19 @@ export default {
 
     return {
       ImportDeclaration(node) {
-        if (node.source.value !== PACKAGE) return;
+        const source = String(node.source.value);
         for (const specifier of node.specifiers) {
-          if (specifier.type !== "ImportSpecifier") continue;
+          if (specifier.importKind === "type") continue;
+          imports.set(specifier.local.name, {
+            source,
+            imported:
+              specifier.type === "ImportSpecifier"
+                ? specifier.imported.name ?? specifier.imported.value
+                : specifier.type === "ImportDefaultSpecifier"
+                  ? "default"
+                  : "*",
+          });
+          if (source !== PACKAGE || specifier.type !== "ImportSpecifier") continue;
           const imported = specifier.imported.name ?? specifier.imported.value;
           if (["pureUI", "layoutUI", "syncUI", "asyncUI"].includes(imported)) {
             factories.set(specifier.local.name, imported);
@@ -95,18 +133,74 @@ export default {
         for (const { node, kind, locals } of candidates) {
           const root = calleeRoot(node.callee);
           const name = calleeName(node.callee);
-          if ((root && locals.has(root)) || (name && allowedCalls.has(name))) {
+          if (
+            mode === "hooks-only" &&
+            (kind !== "Call" || !isHookCall(node.callee, name, imports))
+          ) {
             continue;
           }
+          if (root && locals.has(root)) continue;
+
+          const module = imports.get(root)?.source;
+          const denied =
+            matches(deniedCallPatterns, name) || matches(deniedModules, module);
+          const allowed =
+            allowedCalls.has(name) ||
+            matches(allowedCallPatterns, name) ||
+            matches(allowedModules, module);
+          if (!denied && allowed) continue;
+
           context.report({
             node: node.callee,
-            message: `${kind} "${name ?? "<expression>"}" is external to Pure UI. Pass it through props or add it to allowedCalls.`,
+            message: `${kind} "${name ?? "<expression>"}" is external to Pure UI. Pass it through props or add it to an allowlist.`,
           });
         }
       },
     };
   },
 };
+
+function compilePatterns(patterns = []) {
+  return patterns.flatMap((pattern) => {
+    try {
+      return [new RegExp(pattern)];
+    } catch {
+      return [];
+    }
+  });
+}
+
+function compileGlobs(patterns = []) {
+  return patterns.map((pattern) => {
+    let source = "^";
+    for (let index = 0; index < pattern.length; index += 1) {
+      const character = pattern[index];
+      if (character === "*") {
+        if (pattern[index + 1] === "*") {
+          index += 1;
+          source += ".*";
+        } else {
+          source += "[^/]*";
+        }
+      } else {
+        source += character.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      }
+    }
+    return new RegExp(`${source}$`);
+  });
+}
+
+function matches(patterns, value) {
+  return value !== undefined && patterns.some((pattern) => pattern.test(value));
+}
+
+function isHookCall(node, name, imports) {
+  const leaf = name?.split(".").at(-1);
+  const imported = imports.get(calleeRoot(node))?.imported;
+  return [leaf, imported].some(
+    (value) => value === "use" || /^use[A-Z0-9]/.test(value ?? ""),
+  );
+}
 
 function collectInlineComponents(factory, input, output) {
   if (factory === "pureUI") {

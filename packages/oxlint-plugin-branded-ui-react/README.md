@@ -103,7 +103,29 @@ The rule has no default external allowlist. Add deterministic utilities that can
 }
 ```
 
-Names use the spelling at the call site. If `formatDate` is imported as `format`, allow `format`. An entry matches one exact callee name; package names and wildcards are not supported.
+For gradual adoption, the rule also supports:
+
+- `mode: "hooks-only"` to report only hook-shaped calls (`useState`, `useEffect`, `useForm`, and similar), leaving helpers and constructors alone.
+- `allowedCallPatterns` and `deniedCallPatterns` for regular expressions matched against the full callee name. Deny patterns take precedence over allowlists.
+- `allowedModules` and `deniedModules` for imported calls. These use module globs, so `@/shared/ui/**` matches every import below that path.
+
+For example, this bans hooks first while allowing UI-owned translations:
+
+```json
+{
+  "rules": {
+    "branded-ui-react/no-external-call-in-pure-ui": [
+      "warn",
+      {
+        "mode": "hooks-only",
+        "allowedCallPatterns": ["^use.*Translation$"]
+      }
+    ]
+  }
+}
+```
+
+Names use the spelling at the call site. If `formatDate` is imported as `format`, allow `format`. Exact `allowedCalls` entries remain supported; package names and wildcards belong in the module options.
 
 ### Custom Binding filenames
 
@@ -143,7 +165,7 @@ These rules intentionally use Oxlint's file-local AST and are not type-aware.
 
 - `correct-slot` only follows direct member expressions such as `Success.content.List`. It does not recover provenance after assigning, destructuring, returning, or re-exporting a component under another name.
 - `no-binding-import-in-ui` recognizes direct imports matching `bindingFileSuffixes`. It does not inspect barrels, dynamic imports, or the role declared inside another file.
-- `no-external-call-in-pure-ui` is lexical. It checks inline functions in supported Branded UI declarations; it does not inspect a component or contract section passed by identifier. It also does not follow aliases or helper bodies declared outside the component, or reject external value reads that are not calls.
+- `no-external-call-in-pure-ui` is lexical. It checks inline functions in supported Branded UI declarations; it does not inspect a component or contract section passed by identifier. Module policies only inspect direct imports, and the rule does not follow general aliases or helper bodies declared outside the component, or reject external value reads that are not calls.
 - `no-raw-component-export` treats exported PascalCase functions as React components. It can flag a PascalCase non-component function and does not recognize component-producing wrappers other than `memo` and `forwardRef`.
 - Lexically shadowing an injected name can reduce rule accuracy because the plugin does not have TypeScript symbol identity.
 - The plugin does not detect transitive dependencies, role cycles, or project-wide composition violations.

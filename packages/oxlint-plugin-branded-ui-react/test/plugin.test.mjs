@@ -225,3 +225,130 @@ asyncView({
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test("supports hook-only and pattern/module policies", async () => {
+  const directory = await mkdtemp(
+    path.join(tmpdir(), "branded-ui-react-oxlint-granularity-"),
+  );
+
+  try {
+    const sourcePath = path.join(directory, "Calls.ui.tsx");
+    const configPath = path.join(directory, ".oxlintrc.json");
+    await writeFile(
+      configPath,
+      JSON.stringify({
+        jsPlugins: [pluginPath],
+        rules: {
+          "branded-ui-react/no-external-call-in-pure-ui": [
+            "error",
+            {
+              mode: "hooks-only",
+              allowedCallPatterns: ["^use.*Translation$"],
+              deniedCallPatterns: ["^useForm$"],
+              deniedModules: ["react"],
+            },
+          ],
+        },
+      }),
+    );
+    await writeFile(
+      sourcePath,
+      `import { pureUI } from "@jayjnu/branded-ui-react";
+import { useEffect, useState as state } from "react";
+import { useForm } from "@tanstack/react-form";
+import { useTranslation } from "@/shared/i18n";
+
+export const CallsUI = pureUI(() => {
+  state(0);
+  useEffect(() => {}, []);
+  useForm();
+  useTranslation();
+  Boolean(true);
+  return null;
+});
+`,
+    );
+
+    const result = spawnSync(
+      "oxlint",
+      ["--config", configPath, sourcePath],
+      { encoding: "utf8" },
+    );
+    const output = `${result.stdout}\n${result.stderr}`;
+
+    assert.equal(result.status, 1, output);
+    assert.equal(
+      output.match(/branded-ui-react\(no-external-call-in-pure-ui\)/g)?.length,
+      3,
+      output,
+    );
+    assert.match(output, /Call "state" is external/);
+    assert.match(output, /Call "useEffect" is external/);
+    assert.match(output, /Call "useForm" is external/);
+    assert.doesNotMatch(output, /Call "useTranslation" is external/);
+    assert.doesNotMatch(output, /Call "Boolean" is external/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("allows and denies imported modules with glob patterns", async () => {
+  const directory = await mkdtemp(
+    path.join(tmpdir(), "branded-ui-react-oxlint-modules-"),
+  );
+
+  try {
+    const sourcePath = path.join(directory, "Calls.ui.tsx");
+    const configPath = path.join(directory, ".oxlintrc.json");
+    await writeFile(
+      configPath,
+      JSON.stringify({
+        jsPlugins: [pluginPath],
+        rules: {
+          "branded-ui-react/no-external-call-in-pure-ui": [
+            "error",
+            {
+              allowedModules: ["@/shared/ui/**"],
+              allowedCallPatterns: ["^formatLabel$"],
+              deniedModules: ["@/domain/**"],
+            },
+          ],
+        },
+      }),
+    );
+    await writeFile(
+      sourcePath,
+      `import { pureUI } from "@jayjnu/branded-ui-react";
+import { cn } from "@/shared/ui/cn";
+import { formatLabel } from "./format";
+import { validate } from "@/domain/forms";
+
+export const CallsUI = pureUI(({ value }) => {
+  cn("button");
+  formatLabel(value);
+  validate(value);
+  return null;
+});
+`,
+    );
+
+    const result = spawnSync(
+      "oxlint",
+      ["--config", configPath, sourcePath],
+      { encoding: "utf8" },
+    );
+    const output = `${result.stdout}\n${result.stderr}`;
+
+    assert.equal(result.status, 1, output);
+    assert.equal(
+      output.match(/branded-ui-react\(no-external-call-in-pure-ui\)/g)?.length,
+      1,
+      output,
+    );
+    assert.match(output, /Call "validate" is external/);
+    assert.doesNotMatch(output, /Call "cn" is external/);
+    assert.doesNotMatch(output, /Call "formatLabel" is external/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
