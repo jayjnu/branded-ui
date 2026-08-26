@@ -1,164 +1,171 @@
 const PACKAGE = "@jayjnu/branded-ui-react";
 
-export default {
-  meta: {
-    type: "problem",
-    docs: {
-      description: "Require external calls in Pure UI components to be allowlisted",
-    },
-    schema: [
-      {
-        type: "object",
-        properties: {
-          mode: { enum: ["all", "hooks-only"] },
-          allowedCalls: {
-            type: "array",
-            items: { type: "string", minLength: 1 },
-            uniqueItems: true,
+export function createNoExternalCallRule({
+  hooksOnly = false,
+  description = "Require external calls in Pure UI components to be allowlisted",
+} = {}) {
+  return {
+    meta: {
+      type: "problem",
+      docs: { description },
+      schema: [
+        {
+          type: "object",
+          properties: {
+            allowedCalls: {
+              type: "array",
+              items: { type: "string", minLength: 1 },
+              uniqueItems: true,
+            },
+            allowedCallPatterns: {
+              type: "array",
+              items: { type: "string", minLength: 1 },
+              uniqueItems: true,
+            },
+            deniedCallPatterns: {
+              type: "array",
+              items: { type: "string", minLength: 1 },
+              uniqueItems: true,
+            },
+            allowedModules: {
+              type: "array",
+              items: { type: "string", minLength: 1 },
+              uniqueItems: true,
+            },
+            deniedModules: {
+              type: "array",
+              items: { type: "string", minLength: 1 },
+              uniqueItems: true,
+            },
           },
-          allowedCallPatterns: {
-            type: "array",
-            items: { type: "string", minLength: 1 },
-            uniqueItems: true,
-          },
-          deniedCallPatterns: {
-            type: "array",
-            items: { type: "string", minLength: 1 },
-            uniqueItems: true,
-          },
-          allowedModules: {
-            type: "array",
-            items: { type: "string", minLength: 1 },
-            uniqueItems: true,
-          },
-          deniedModules: {
-            type: "array",
-            items: { type: "string", minLength: 1 },
-            uniqueItems: true,
-          },
+          additionalProperties: false,
         },
-        additionalProperties: false,
-      },
-    ],
-    defaultOptions: [{ mode: "all", allowedCalls: [] }],
-  },
-  create(context) {
-    const options = context.options[0] ?? {};
-    const mode = options.mode ?? "all";
-    const allowedCalls = new Set(options.allowedCalls ?? []);
-    const allowedCallPatterns = compilePatterns(options.allowedCallPatterns);
-    const deniedCallPatterns = compilePatterns(options.deniedCallPatterns);
-    const allowedModules = compileGlobs(options.allowedModules);
-    const deniedModules = compileGlobs(options.deniedModules);
-    const factories = new Map();
-    const imports = new Map();
-    // ponytail: direct imports only; use a type-aware analyzer for general aliases.
-    const callbacks = new WeakSet();
-    const active = [];
-    const candidates = [];
+      ],
+      defaultOptions: [{ allowedCalls: [] }],
+    },
+    create(context) {
+      const options = context.options[0] ?? {};
+      const allowedCalls = new Set(options.allowedCalls ?? []);
+      const allowedCallPatterns = compilePatterns(options.allowedCallPatterns);
+      const deniedCallPatterns = compilePatterns(options.deniedCallPatterns);
+      const allowedModules = compileGlobs(options.allowedModules);
+      const deniedModules = compileGlobs(options.deniedModules);
+      const factories = new Map();
+      const imports = new Map();
+      // ponytail: direct imports only; use a type-aware analyzer for general aliases.
+      const callbacks = new WeakSet();
+      const active = [];
+      const candidates = [];
 
-    function enterFunction(node) {
-      if (callbacks.has(node)) active.push({ node, locals: new Set() });
-      const current = active.at(-1);
-      if (!current) return;
-      if (node.id) collectNames(node.id, current.locals);
-      for (const parameter of node.params) collectNames(parameter, current.locals);
-    }
+      function enterFunction(node) {
+        if (callbacks.has(node)) active.push({ node, locals: new Set() });
+        const current = active.at(-1);
+        if (!current) return;
+        if (node.id) collectNames(node.id, current.locals);
+        for (const parameter of node.params) {
+          collectNames(parameter, current.locals);
+        }
+      }
 
-    function exitFunction(node) {
-      if (active.at(-1)?.node === node) active.pop();
-    }
+      function exitFunction(node) {
+        if (active.at(-1)?.node === node) active.pop();
+      }
 
-    function inspect(node, kind) {
-      const current = active.at(-1);
-      if (!current || isInlineFunction(node.callee)) return;
-      candidates.push({ node, kind, locals: current.locals });
-    }
+      function inspect(node, kind) {
+        const current = active.at(-1);
+        if (!current || isInlineFunction(node.callee)) return;
+        candidates.push({ node, kind, locals: current.locals });
+      }
 
-    return {
-      ImportDeclaration(node) {
-        const source = String(node.source.value);
-        for (const specifier of node.specifiers) {
-          if (specifier.importKind === "type") continue;
-          imports.set(specifier.local.name, {
-            source,
-            imported:
-              specifier.type === "ImportSpecifier"
-                ? specifier.imported.name ?? specifier.imported.value
-                : specifier.type === "ImportDefaultSpecifier"
-                  ? "default"
-                  : "*",
-          });
-          if (source !== PACKAGE || specifier.type !== "ImportSpecifier") continue;
-          const imported = specifier.imported.name ?? specifier.imported.value;
-          if (["pureUI", "layoutUI", "syncUI", "asyncUI"].includes(imported)) {
-            factories.set(specifier.local.name, imported);
+      return {
+        ImportDeclaration(node) {
+          const source = String(node.source.value);
+          for (const specifier of node.specifiers) {
+            if (specifier.importKind === "type") continue;
+            imports.set(specifier.local.name, {
+              source,
+              imported:
+                specifier.type === "ImportSpecifier"
+                  ? specifier.imported.name ?? specifier.imported.value
+                  : specifier.type === "ImportDefaultSpecifier"
+                    ? "default"
+                    : "*",
+            });
+            if (source !== PACKAGE || specifier.type !== "ImportSpecifier") {
+              continue;
+            }
+            const imported = specifier.imported.name ?? specifier.imported.value;
+            if (["pureUI", "layoutUI", "syncUI", "asyncUI"].includes(imported)) {
+              factories.set(specifier.local.name, imported);
+            }
           }
-        }
-      },
-      CallExpression(node) {
-        if (node.callee.type === "Identifier") {
-          collectInlineComponents(
-            factories.get(node.callee.name),
-            node.arguments[0],
-            callbacks,
-          );
-        }
-        inspect(node, "Call");
-      },
-      NewExpression: (node) => inspect(node, "Constructor"),
-      ArrowFunctionExpression: enterFunction,
-      "ArrowFunctionExpression:exit": exitFunction,
-      FunctionExpression: enterFunction,
-      "FunctionExpression:exit": exitFunction,
-      FunctionDeclaration(node) {
-        const current = active.at(-1);
-        if (current && node.id) collectNames(node.id, current.locals);
-        enterFunction(node);
-      },
-      "FunctionDeclaration:exit": exitFunction,
-      VariableDeclarator(node) {
-        const current = active.at(-1);
-        if (current) collectNames(node.id, current.locals);
-      },
-      ClassDeclaration(node) {
-        const current = active.at(-1);
-        if (current && node.id) collectNames(node.id, current.locals);
-      },
-      CatchClause(node) {
-        const current = active.at(-1);
-        if (current && node.param) collectNames(node.param, current.locals);
-      },
-      "Program:exit"() {
-        for (const { node, kind, locals } of candidates) {
-          const root = calleeRoot(node.callee);
-          const name = calleeName(node.callee);
-          if (
-            mode === "hooks-only" &&
-            (kind !== "Call" || !isHookCall(node.callee, name, imports))
-          ) {
-            continue;
+        },
+        CallExpression(node) {
+          if (node.callee.type === "Identifier") {
+            collectInlineComponents(
+              factories.get(node.callee.name),
+              node.arguments[0],
+              callbacks,
+            );
           }
-          if (root && locals.has(root)) continue;
+          inspect(node, "Call");
+        },
+        NewExpression: (node) => inspect(node, "Constructor"),
+        ArrowFunctionExpression: enterFunction,
+        "ArrowFunctionExpression:exit": exitFunction,
+        FunctionExpression: enterFunction,
+        "FunctionExpression:exit": exitFunction,
+        FunctionDeclaration(node) {
+          const current = active.at(-1);
+          if (current && node.id) collectNames(node.id, current.locals);
+          enterFunction(node);
+        },
+        "FunctionDeclaration:exit": exitFunction,
+        VariableDeclarator(node) {
+          const current = active.at(-1);
+          if (current) collectNames(node.id, current.locals);
+        },
+        ClassDeclaration(node) {
+          const current = active.at(-1);
+          if (current && node.id) collectNames(node.id, current.locals);
+        },
+        CatchClause(node) {
+          const current = active.at(-1);
+          if (current && node.param) collectNames(node.param, current.locals);
+        },
+        "Program:exit"() {
+          for (const { node, kind, locals } of candidates) {
+            const root = calleeRoot(node.callee);
+            const name = calleeName(node.callee);
+            if (
+              hooksOnly &&
+              (kind !== "Call" || !isHookCall(node.callee, name, imports))
+            ) {
+              continue;
+            }
+            if (root && locals.has(root)) continue;
 
-          const module = imports.get(root)?.source;
-          const denied =
-            matches(deniedCallPatterns, name) || matches(deniedModules, module);
-          const allowed =
-            allowedCalls.has(name) ||
-            matches(allowedCallPatterns, name) ||
-            matches(allowedModules, module);
-          if (!denied && allowed) continue;
+            const module = imports.get(root)?.source;
+            const denied =
+              matches(deniedCallPatterns, name) || matches(deniedModules, module);
+            const allowed =
+              allowedCalls.has(name) ||
+              matches(allowedCallPatterns, name) ||
+              matches(allowedModules, module);
+            if (!denied && allowed) continue;
 
-          context.report({
-            node: node.callee,
-            message: `${kind} "${name ?? "<expression>"}" is external to Pure UI. Pass it through props or add it to an allowlist.`,
-          });
-        }
-      },
-    };
-  },
-};
+            context.report({
+              node: node.callee,
+              message: `${kind} "${name ?? "<expression>"}" is external to Pure UI. Pass it through props or add it to an allowlist.`,
+            });
+          }
+        },
+      };
+    },
+  };
+}
+
+export default createNoExternalCallRule();
 
 function compilePatterns(patterns = []) {
   return patterns.flatMap((pattern) => {

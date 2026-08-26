@@ -226,7 +226,7 @@ asyncView({
   }
 });
 
-test("supports hook-only and pattern/module policies", async () => {
+test("supports the dedicated hook rule with pattern/module policies", async () => {
   const directory = await mkdtemp(
     path.join(tmpdir(), "branded-ui-react-oxlint-granularity-"),
   );
@@ -239,10 +239,9 @@ test("supports hook-only and pattern/module policies", async () => {
       JSON.stringify({
         jsPlugins: [pluginPath],
         rules: {
-          "branded-ui-react/no-external-call-in-pure-ui": [
+          "branded-ui-react/no-hook-call-in-pure-ui": [
             "error",
             {
-              mode: "hooks-only",
               allowedCallPatterns: ["^use.*Translation$"],
               deniedCallPatterns: ["^useForm$"],
               deniedModules: ["react"],
@@ -278,7 +277,7 @@ export const CallsUI = pureUI(() => {
 
     assert.equal(result.status, 1, output);
     assert.equal(
-      output.match(/branded-ui-react\(no-external-call-in-pure-ui\)/g)?.length,
+      output.match(/branded-ui-react\(no-hook-call-in-pure-ui\)/g)?.length,
       3,
       output,
     );
