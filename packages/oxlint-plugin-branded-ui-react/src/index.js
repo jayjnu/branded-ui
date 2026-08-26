@@ -1,6 +1,7 @@
 import correctSlot from "./rules/correct-slot.js";
 import noBindingImportInUI from "./rules/no-binding-import-in-ui.js";
 import noExternalCallInPureUI from "./rules/no-external-call-in-pure-ui.js";
+import noHookCallInPureUI from "./rules/no-hook-call-in-pure-ui.js";
 import noRawComponentExport from "./rules/no-raw-component-export.js";
 
 export { recommended } from "./recommended.js";
@@ -11,6 +12,7 @@ export default {
     "correct-slot": correctSlot,
     "no-binding-import-in-ui": noBindingImportInUI,
     "no-external-call-in-pure-ui": noExternalCallInPureUI,
+    "no-hook-call-in-pure-ui": noHookCallInPureUI,
     "no-raw-component-export": noRawComponentExport,
   },
 };
