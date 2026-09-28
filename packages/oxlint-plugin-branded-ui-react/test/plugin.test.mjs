@@ -111,6 +111,112 @@ export { External } from "./other";
   }
 });
 
+test("requires a named factory export only in configured page modules", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "branded-ui-react-oxlint-"));
+  try {
+    const configPath = path.join(directory, ".oxlintrc.json");
+    await writeFile(configPath, JSON.stringify({
+      jsPlugins: [pluginPath],
+      overrides: [{
+        files: ["**/*.page.ui.tsx"],
+        rules: {
+          "branded-ui-react/require-exported-ui-factory": [
+            "error", { factory: "asyncUI", namePattern: "PageUI$" },
+          ],
+        },
+      }, {
+        files: ["static.page.ui.tsx"],
+        rules: { "branded-ui-react/require-exported-ui-factory": "off" },
+      }],
+    }));
+    async function check(name, source) {
+      const file = path.join(directory, name);
+      await writeFile(file, `import { asyncUI as asyncView, pureUI, layoutUI } from "@jayjnu/branded-ui-react";\n${source}\n`);
+      const result = spawnSync("oxlint", ["--config", configPath, file], { encoding: "utf8" });
+      return { status: result.status, output: `${result.stdout}\n${result.stderr}` };
+    }
+
+    let result = await check("orders.page.ui.tsx", `
+const Layout = layoutUI({});
+const OrdersPageUI = asyncView({});
+export { OrdersPageUI };
+export const Helper = pureUI(() => null);
+export type { External } from "./external";
+`);
+    assert.equal(result.status, 0, result.output);
+
+    result = await check("orders.page.ui.tsx", `export const OrdersPageUI = pureUI(() => null);`);
+    assert.equal(result.status, 1, result.output);
+    assert.match(result.output, /OrdersPageUI must use asyncUI, not pureUI/);
+    assert.equal(result.output.match(/branded-ui-react\(require-exported-ui-factory\)/g)?.length, 1, result.output);
+
+    result = await check("orders.page.ui.tsx", `const OrdersPageUI = asyncView({});`);
+    assert.equal(result.status, 1, result.output);
+    assert.match(result.output, /must export at least 1 asyncUI contract matching \/PageUI\$/);
+
+    result = await check("orders.page.ui.tsx", `
+const Contract = asyncView({});
+export { Contract as OrdersPageUI };
+`);
+    assert.equal(result.status, 0, result.output);
+
+    result = await check("orders.page.ui.tsx", `
+export const Helper = asyncView({});
+export { External as OrdersPageUI } from "./external";
+`);
+    assert.equal(result.status, 1, result.output);
+    assert.match(result.output, /must export at least 1 asyncUI/);
+
+    result = await check("orders.page.ui.tsx", `export const OrdersPageUI = () => null;`);
+    assert.equal(result.status, 1, result.output);
+    assert.match(result.output, /OrdersPageUI must be declared with asyncUI\(\)/);
+
+    result = await check("orders.page.ui.tsx", `
+const OrdersPageUI = asyncView({});
+export default OrdersPageUI;
+`);
+    assert.equal(result.status, 1, result.output);
+    assert.match(result.output, /must export at least 1 asyncUI/);
+
+    result = await check("ordinary.ui.tsx", `export const OrdersPageUI = pureUI(() => null);`);
+    assert.equal(result.status, 0, result.output);
+    result = await check("static.page.ui.tsx", `export const StaticPageUI = pureUI(() => null);`);
+    assert.equal(result.status, 0, result.output);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("counts distinct matching exports and supports other factories", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "branded-ui-react-oxlint-"));
+  try {
+    const configPath = path.join(directory, ".oxlintrc.json");
+    const sourcePath = path.join(directory, "Contracts.tsx");
+    await writeFile(configPath, JSON.stringify({
+      jsPlugins: [pluginPath],
+      rules: { "branded-ui-react/require-exported-ui-factory": ["error", { factory: "binding", minimum: 2 }] },
+    }));
+    await writeFile(sourcePath, `
+import { binding } from "@jayjnu/branded-ui-react";
+const First = binding(UI);
+export { First };
+export const Second = binding(UI);
+`);
+    let result = spawnSync("oxlint", ["--config", configPath, sourcePath], { encoding: "utf8" });
+    assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+    await writeFile(sourcePath, `
+import { binding } from "@jayjnu/branded-ui-react";
+const First = binding(UI);
+export { First };
+`);
+    result = spawnSync("oxlint", ["--config", configPath, sourcePath], { encoding: "utf8" });
+    assert.equal(result.status, 1, `${result.stdout}\n${result.stderr}`);
+    assert.match(`${result.stdout}\n${result.stderr}`, /must export at least 2 binding/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test("allows only local and allowlisted calls in Pure UI declarations", async () => {
   const directory = await mkdtemp(
     path.join(tmpdir(), "branded-ui-react-oxlint-"),

@@ -3,6 +3,7 @@ import noBindingImportInUI from "./rules/no-binding-import-in-ui.js";
 import noExternalCallInPureUI from "./rules/no-external-call-in-pure-ui.js";
 import noHookCallInPureUI from "./rules/no-hook-call-in-pure-ui.js";
 import noRawComponentExport from "./rules/no-raw-component-export.js";
+import requireExportedUIFactory from "./rules/require-exported-ui-factory.js";
 
 export { recommended } from "./recommended.js";
 
@@ -14,5 +15,6 @@ export default {
     "no-external-call-in-pure-ui": noExternalCallInPureUI,
     "no-hook-call-in-pure-ui": noHookCallInPureUI,
     "no-raw-component-export": noRawComponentExport,
+    "require-exported-ui-factory": requireExportedUIFactory,
   },
 };
