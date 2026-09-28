@@ -5,5 +5,34 @@
     "branded-ui-react/no-binding-import-in-ui": "error",
     "branded-ui-react/no-external-call-in-pure-ui": "error",
     "branded-ui-react/no-raw-component-export": "error"
-  }
+  },
+  "overrides": [
+    {
+      "files": ["src/pages/**/*.ui.tsx"],
+      "rules": {
+        "branded-ui-react/require-exported-ui-factory": [
+          "error",
+          { "factory": "asyncUI", "namePattern": "PageUI$" }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/pages/dashboard/DashboardPage.ui.tsx",
+        "src/pages/orders/OrdersPage.ui.tsx",
+        "src/pages/account/AccountPage.ui.tsx",
+        "src/pages/not-found/NotFoundPage.ui.tsx"
+      ],
+      "rules": { "branded-ui-react/require-exported-ui-factory": "off" }
+    },
+    {
+      "files": ["src/features/**/*.ui.tsx"],
+      "rules": {
+        "branded-ui-react/require-exported-ui-factory": [
+          "error",
+          { "factory": "asyncUI", "namePattern": "UI$" }
+        ]
+      }
+    }
+  ]
 }

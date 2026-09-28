@@ -65,4 +65,6 @@ pnpm typecheck
 pnpm test
 ```
 
-Oxlint checks direct slot placement, UI-to-Binding imports, external calls in Pure UI, and raw component exports through `@jayjnu/oxlint-plugin-branded-ui-react`.
+Oxlint checks direct slot placement, UI-to-Binding imports, external calls in Pure UI, and raw component exports through `@jayjnu/oxlint-plugin-branded-ui-react`. The opt-in `require-exported-ui-factory` override requires exported `asyncUI` contracts for feature UI files and, by default, future page UI files (`src/pages/**/*.ui.tsx`).
+
+The four existing page UIs are explicitly opted out: they are `syncUI` shells, with async visual states handled by child feature Bindings (except the static not-found page). The lint rule **does not verify** that delegated states are covered or that the page Binding consumes an exported contract. Remove each page's exception when migrating its async state contract to the page; don't treat the exception as proof of coverage.

@@ -43,6 +43,37 @@ export default defineConfig({
 | `no-external-call-in-pure-ui` | Calls and constructors inside inline Pure UI declarations are rooted in props or local bindings, or explicitly allowlisted.     |
 | `no-hook-call-in-pure-ui`     | Hook-shaped calls inside inline Pure UI declarations are kept outside the declarative UI layer.                                  |
 | `no-raw-component-export`     | Exported PascalCase function components use a Branded UI factory instead of a raw function, `memo`, or `forwardRef`.             |
+| `require-exported-ui-factory` | Opt-in: a configured module exports named contracts declared with the required Branded UI factory.                              |
+
+### `require-exported-ui-factory`
+
+Use an Oxlint override to require `asyncUI` contracts in page UI modules. This rule is not in `recommended`: projects may have synchronous pages or different file roles.
+
+```json
+{
+  "overrides": [
+    {
+      "files": ["**/*.page.ui.tsx"],
+      "rules": {
+        "branded-ui-react/require-exported-ui-factory": [
+          "error",
+          { "factory": "asyncUI", "namePattern": "PageUI$", "minimum": 1 }
+        ]
+      }
+    },
+    {
+      "files": ["src/pages/fully-static.page.ui.tsx"],
+      "rules": { "branded-ui-react/require-exported-ui-factory": "off" }
+    }
+  ]
+}
+```
+
+The later, narrower override opts a genuinely synchronous page out. Prefer an explicit exception over disabling the page convention globally. Opting out to delegate async state to a child Binding is **not verified** by this rule.
+
+`factory` is required and accepts `pureUI`, `syncUI`, `asyncUI`, `layoutUI`, or `binding`. `minimum` defaults to `1`; `namePattern` is an optional JavaScript regular expression matched against the **exported name**. Both `export const OrdersPageUI = asyncUI(...)` and `const OrdersPageUI = asyncUI(...); export { OrdersPageUI };` count. Local import aliases of Branded UI factories count too. Type-only exports, re-exports from other files, and default exports do not count. Private helpers and other factory declarations may coexist in the file.
+
+A matching named export using the wrong factory gets a targeted diagnostic; a missing or private contract gets a module-level diagnostic. The rule checks only file-local declarations and exports. It does **not** prove the contract is consumed by a page Binding or that async state branching has not moved into a nested UI component.
 
 ### `no-external-call-in-pure-ui`
 
@@ -158,7 +189,8 @@ src/
     ├── no-binding-import-in-ui.js
     ├── no-external-call-in-pure-ui.js
     ├── no-hook-call-in-pure-ui.js
-    └── no-raw-component-export.js
+    ├── no-raw-component-export.js
+    └── require-exported-ui-factory.js
 ```
 
 ## Limitations
